@@ -1,0 +1,1 @@
+/media/achester/STAR/repos/chessbot/target/debug/chessbot: /media/achester/STAR/repos/chessbot/src/chessbot/board.rs /media/achester/STAR/repos/chessbot/src/chessbot/mod.rs /media/achester/STAR/repos/chessbot/src/main.rs
