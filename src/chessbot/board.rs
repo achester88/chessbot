@@ -1,3 +1,15 @@
+pub enum Dir {
+    north,
+    south,
+    west,
+    east,
+    noea,
+    nowe,
+    sowe,
+    soea
+
+}
+
 pub struct Board {
     white_pawns: u64,
     white_bishops: u64,
@@ -19,6 +31,8 @@ pub struct Board {
     half_moves: u16,
     full_move: u64,
 }
+
+const attacks: Vec<u64> = vec![];
 
 impl Board {
 
@@ -53,7 +67,7 @@ impl Board {
                 i += c.to_digit(10).unwrap() as usize;
             } else {
                 //println!("{}", c);
-                let s = 1 << i; //set bit of i;
+                let s = 1 << (63-i); //set bit of i;
                 match c {
                     'P' => wp = wp | s,
                     'B' => wb = wb | s,
@@ -96,7 +110,8 @@ impl Board {
             let square: Vec<char> = fen[3].chars().collect();
             let f = (square[0].to_ascii_lowercase() as u8) - 97;//a:0, h:9
             let r = square[1].to_digit(10).unwrap() as u8;
-            ep = ((8-r)*8)+f;
+            //println!("{}:{} = {}", r, f, (r*8)+f);
+            ep = ((r-1)*8)+(f-1);
         }
 
         //Halfmove
@@ -129,10 +144,34 @@ impl Board {
         };
     }
 
-    pub fn print_board(self) {
+    pub fn gen_moves(self) -> Vec<(u8,u8)> {
+        return vec!();
+    }
+
+    pub fn gen_ray_attacks(occupied: u64, direction: Dir, square: usize) -> u64 {
+        let attack: u64 = attacks[Dir::east as usize][square];
+        let block = attack & occupied;
+        if block != 0 {
+            let stop;
+            if direction > 0 {
+                stop = bitScan(block); 
+            } else {
+                stop = bitScanNeg(block);
+            }
+            attack = attack ^ rayAttacks[dir8][stop];
+            
+        }
+        return attack;
+    }
+    //move fuction that return a new board after that move
+
+    pub fn print_board(&self) {
         println!("\n{} to move:", (if self.white_turn {"White"} else {"Black"}));
         println!("-----");
-        for i in 0..64 {
+        for r in [7,6,5,4,3,2,1,0] { //cant be bothered
+            for f in 0..8 {
+            let i = (r*8)+f;
+            
             if ((self.white_pawns >> i) & 1) == 1 {
                 print!("P ");
             } else if ((self.white_bishops >> i) & 1) == 1 {
@@ -163,13 +202,11 @@ impl Board {
                 } else {
                     print!(". ");
                 }
-                //print!("{} ", i);
             }
 
-            if ((i+1) % 8) == 0 {
-                println!();
-            }
         }
+        println!();
+    }
         println!("-----");
         println!("Castling Rights: {}{} {}{}", 
         if((self.casling >> 0) & 1)==1{"Q"}else{"-"},
