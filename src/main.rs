@@ -1,12 +1,12 @@
 mod chessbot;
-use chessbot::board;
 use board::*;
-use std::io::{stdin,stdout,Write};
+use chessbot::*;
+use engine::*;
+use std::io::{stdin, stdout, Write};
 
 fn main() {
-    let b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq e4 0 1");
-    b.print_board();
-    let moves = b.gen_moves();
+    let eng = Engine::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq e4 0 1");
+    eng.gen_moves();
     /*loop {
         let _=stdout().flush();
         let mut input=String::new();

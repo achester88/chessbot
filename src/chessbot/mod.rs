@@ -1,10 +1,20 @@
 pub mod board;
+pub mod engine;
 
-pub fn print_board(bitboard: &u64) {
-    for i in 0..64 {
-        print!("{} ", (bitboard >> i) & 1);
-        if (i+1) % 8 == 0 {
-            println!();
+pub fn print_bitboard(bitboard: &u64) {
+    println!("-----");
+    for r in [7, 6, 5, 4, 3, 2, 1, 0] {
+        //cant be bothered
+        for f in 0..8 {
+            let i = (r * 8) + f;
+
+            if ((bitboard >> i) & 1) == 1 {
+                print!("1 ");
+            } else {
+                print!(". ")
+            }
         }
+        println!("")
     }
+    println!("-----");
 }
