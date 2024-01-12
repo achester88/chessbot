@@ -1,1 +1,1 @@
-/home/runner/chessbot-1/target/debug/chessbot: /home/runner/chessbot-1/src/chessbot/board.rs /home/runner/chessbot-1/src/chessbot/engine.rs /home/runner/chessbot-1/src/chessbot/mod.rs /home/runner/chessbot-1/src/main.rs
+/home/runner/chessbot-1/target/debug/chessbot: /home/runner/chessbot-1/src/chessbot/bitboard.rs /home/runner/chessbot-1/src/chessbot/board.rs /home/runner/chessbot-1/src/chessbot/engine.rs /home/runner/chessbot-1/src/chessbot/mod.rs /home/runner/chessbot-1/src/main.rs

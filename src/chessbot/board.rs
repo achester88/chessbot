@@ -1,4 +1,4 @@
-use super::print_bitboard;
+//use super::bitboard::{};
 
 pub struct Board {
     pub white_pawns: u64,
@@ -24,19 +24,19 @@ pub struct Board {
 
 impl Board {
     pub fn new(fen_str: &str) -> Self {
-        println!("{}", fen_str);
-        let mut wp: u64 = 0;
-        let mut wb: u64 = 0;
-        let mut wn: u64 = 0;
-        let mut wr: u64 = 0;
-        let mut wq: u64 = 0;
-        let mut wk: u64 = 0;
-        let mut bp: u64 = 0;
-        let mut bb: u64 = 0;
-        let mut bn: u64 = 0;
-        let mut br: u64 = 0;
-        let mut bq: u64 = 0;
-        let mut bk: u64 = 0;
+        //println!("{}", fen_str);
+        let mut wp = 0;
+        let mut wb = 0;
+        let mut wn = 0;
+        let mut wr = 0;
+        let mut wq = 0;
+        let mut wk = 0;
+        let mut bp = 0;
+        let mut bb = 0;
+        let mut bn = 0;
+        let mut br = 0;
+        let mut bq = 0;
+        let mut bk = 0;
         let mut wt = true;
         let mut casling: u8 = 0;
         let mut ep: u8 = 65;
@@ -110,7 +110,7 @@ impl Board {
         if fen.len() > 4 {
             fm = fen[5].parse::<u64>().unwrap();
         }
-        println!("{:?}", fen);
+        //println!("{:?}", fen);
         return Board {
             white_pawns: wp,
             white_bishops: wb,
@@ -130,6 +130,39 @@ impl Board {
             half_moves: hm,
             full_move: fm,
         };
+    }
+
+    pub fn occupied(&self) -> u64 {
+        self.white_pawns
+            | self.white_bishops
+            | self.white_knights
+            | self.white_rooks
+            | self.white_queens
+            | self.white_king
+            | self.black_pawns
+            | self.black_bishops
+            | self.black_knights
+            | self.black_rooks
+            | self.black_queens
+            | self.black_king
+    }
+
+    pub fn black_pieces(&self) -> u64 {
+        self.black_pawns
+            | self.black_bishops
+            | self.black_knights
+            | self.black_rooks
+            | self.black_queens
+            | self.black_king
+    }
+
+    pub fn white_pieces(&self) -> u64 {
+        self.white_pawns
+            | self.white_bishops
+            | self.white_knights
+            | self.white_rooks
+            | self.white_queens
+            | self.white_king
     }
 
     pub fn print_board(&self) {
