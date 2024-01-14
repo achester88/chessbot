@@ -1,8 +1,9 @@
-use super::{bitboard, board};
+use super::{bitboard, board, utils};
 use bitboard::*;
 use board::*;
+use utils::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Dir {
     North,
     South,
@@ -30,21 +31,30 @@ impl Engine {
     pub fn gen_moves(self) -> Vec<(u8, u8)> {
         
         if self.board.white_turn {
-          let a = self.gen_ray_attacks(self.board.occupied(), Dir::South, 25);
-          print_bitboard(a);
-            //print_bitboard(!self.board.black_bishops);
-            //gen_attacks();
+          self.gen_rook_moves(34, self.board.white_pieces);
+          
+          //rooks
+          // bitscan check if rook, get pos, get moves
         }
         return vec![];
     }
 
-    pub fn gen_rook_moves() -> Vec<u8> {
-        return vec![];
+    pub fn gen_rook_moves(&self, sq: usize, pieces: u64) -> Vec<usize> {
+        let all_moves = 
+        self.gen_ray_attacks(self.board.occupied, Dir::North, sq) | 
+        self.gen_ray_attacks(self.board.occupied, Dir::South, sq) | 
+        self.gen_ray_attacks(self.board.occupied, Dir::East, sq) | 
+        self.gen_ray_attacks(self.board.occupied, Dir::West, sq);
+
+        let attack = all_moves & !pieces;
+
+        print_bitboard_pos(attack, sq);
+        return board_serialize(attack);
     }
 
     pub fn gen_ray_attacks(&self, occupied: u64, dir: Dir, square: usize) -> u64 {
-        print_bitboard(occupied);
-        print_bitboard(1 << square);
+        //print_bitboard(occupied);
+        //print_bitboard(1 << square);
         let set = &self.ray_attacks[dir as usize];
         let mut attack: u64 = set[square];
         let block = attack & occupied;
@@ -64,18 +74,6 @@ impl Engine {
 
 //https://www.chessprogramming.org/On_an_empty_Board#Rays_by_Line
 
-fn bit_scan(num: u64) -> usize {
-  if num != 0 {
-    println!("{}", (0b000010001010100_i32).trailing_zeros());
-    return num.trailing_zeros() as usize;
-  }
-  return 0;
-}
-
-fn bit_scan_neg(num: u64) -> usize {
-  (num.leading_zeros() ^ 63) as usize
-}
-
 fn dir_is_pos(dir: Dir) -> bool {
   match dir {
     Dir::North | Dir::NOWE | Dir::NOEA | Dir::East => true,
@@ -90,15 +88,12 @@ fn gen_attacks() -> Vec<Vec<u64>> {
     //North
     let mut nort: u64 = 0x0101010101010100;
     for i in 0..64 {
-        //print_bitboard(&nort);
         attacks[Dir::North as usize][i as usize] = nort;
         nort <<= 1;
     }
     //South
     let mut south: u64 = 0x80808080808080;
     for i in (0..64).rev() {
-      //println!("{}", i);
-        //print_bitboard(south);
         attacks[Dir::South as usize][i as usize] = south;
           south >>= 1;
     }
@@ -108,7 +103,6 @@ fn gen_attacks() -> Vec<Vec<u64>> {
     for i in 0..8 {
       east = 0xfe << (8 * i);
       for ii in 0..8 {
-        //print_bitboard(east);
         attacks[Dir::East as usize][((i*8)+ii) as usize] = east;
         east = postshift::east_one(east);
       }
@@ -119,12 +113,59 @@ fn gen_attacks() -> Vec<Vec<u64>> {
     for i in 0..8 {
         west = 0x7f << (8 * i);
       for ii in 0..8 {
-        //print_bitboard(west);
-        attacks[Dir::West as usize][((i*8)+ii) as usize] = west;
+        attacks[Dir::West as usize][((i*8)+(7-ii)) as usize] = west;
         west = postshift::west_one(west);
       }
     }
+
+    //noea
+    let mut noea;
+    for i in 0..8 {
+        noea = 0x8040201008040200 << (8*i);
+      for ii in 0..8 {
+        attacks[Dir::NOEA as usize][((i*8)+ii) as usize] = noea;
+
+        noea = postshift::east_one(noea);
+      }
+    }
+
+    //nowe
+    let mut nowe: u64 = 0x8040201008040200;
+    for i in 0..8 {
+      nowe = 0x102040810204000 << (8*i);
+      for ii in 0..8 {
+        attacks[Dir::NOWE as usize][((i*8)+(7-ii)) as usize] = nowe;
+
+        nowe = postshift::west_one(nowe);
+      }
+    }
+
+    //soea
+    let mut soea: u64;
+    for i in (0..8).rev() {
+      soea = 0x2040810204080 >> (8*(7-i));
+      for ii in 0..8 {
+        attacks[Dir::SOEA as usize][((i*8)+ii) as usize] = soea;
+
+        soea = postshift::east_one(soea);
+      }
+    }
+
+    //sowe
+    let mut sowe: u64;
+    for i in (0..8).rev() {
+      sowe = 0x40201008040201 >> (8*(7-i));
+      for ii in 0..8 {
+        attacks[Dir::SOWE as usize][((i*8)+(7-ii)) as usize] = sowe;
+
+        sowe = postshift::west_one(sowe);
+      }
+    }
   
+    /*for i in 0..64 {
+      print_bitboard_pos(attacks[Dir::SOWE as usize][i],i);
+    }*/
+
     return attacks;
 }
 

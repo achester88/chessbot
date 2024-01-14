@@ -20,6 +20,10 @@ pub struct Board {
     pub en_passant: u8, //postion of avilbe en passant
     pub half_moves: u16,
     pub full_move: u64,
+
+    pub occupied: u64,
+    pub black_pieces: u64,
+    pub white_pieces: u64,
 }
 
 impl Board {
@@ -129,40 +133,10 @@ impl Board {
             en_passant: ep,
             half_moves: hm,
             full_move: fm,
+            occupied: wp | wb | wn | wr | wq | wk | bp | bb | bn | br | bq | bk,
+            black_pieces: bp | bb | bn | br | bq | bk,
+            white_pieces: wp | wb | wn | wr | wq | wk,
         };
-    }
-
-    pub fn occupied(&self) -> u64 {
-        self.white_pawns
-            | self.white_bishops
-            | self.white_knights
-            | self.white_rooks
-            | self.white_queens
-            | self.white_king
-            | self.black_pawns
-            | self.black_bishops
-            | self.black_knights
-            | self.black_rooks
-            | self.black_queens
-            | self.black_king
-    }
-
-    pub fn black_pieces(&self) -> u64 {
-        self.black_pawns
-            | self.black_bishops
-            | self.black_knights
-            | self.black_rooks
-            | self.black_queens
-            | self.black_king
-    }
-
-    pub fn white_pieces(&self) -> u64 {
-        self.white_pawns
-            | self.white_bishops
-            | self.white_knights
-            | self.white_rooks
-            | self.white_queens
-            | self.white_king
     }
 
     pub fn print_board(&self) {
