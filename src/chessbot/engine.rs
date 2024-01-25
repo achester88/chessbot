@@ -31,7 +31,7 @@ impl Engine {
     pub fn gen_moves(self) -> Vec<(u8, u8)> {
         
         if self.board.white_turn {
-          self.gen_rook_moves(34, self.board.white_pieces);
+          self.gen_queen_moves(34, self.board.white_pieces);
           
           //rooks
           // bitscan check if rook, get pos, get moves
@@ -39,7 +39,7 @@ impl Engine {
         return vec![];
     }
 
-    pub fn gen_rook_moves(&self, sq: usize, pieces: u64) -> Vec<usize> {
+    pub fn gen_rook_moves(&self, sq: usize, pieces: u64) -> (usize, u64) {
         let all_moves = 
         self.gen_ray_attacks(self.board.occupied, Dir::North, sq) | 
         self.gen_ray_attacks(self.board.occupied, Dir::South, sq) | 
@@ -49,8 +49,32 @@ impl Engine {
         let attack = all_moves & !pieces;
 
         print_bitboard_pos(attack, sq);
-        return board_serialize(attack);
+        return (sq, attack);//board_serialize(attack);
     }
+
+    pub fn gen_bishop_moves(&self, sq: usize, pieces: u64) -> (usize, u64) {
+      let all_moves = 
+      self.gen_ray_attacks(self.board.occupied, Dir::NOEA, sq) | 
+      self.gen_ray_attacks(self.board.occupied, Dir::NOWE, sq) | 
+      self.gen_ray_attacks(self.board.occupied, Dir::SOEA, sq) | 
+      self.gen_ray_attacks(self.board.occupied, Dir::SOWE, sq);
+
+      let attack = all_moves & !pieces;
+
+      print_bitboard_pos(attack, sq);
+      return (sq, attack);//board_serialize(attack);
+  }
+
+  pub fn gen_queen_moves(&self, sq: usize, pieces: u64) -> (usize, u64) {
+    let all_moves = 
+    self.gen_rook_moves(sq, self.board.occupied).1 | 
+    self.gen_bishop_moves(sq, self.board.occupied).1;
+
+    let attack = all_moves & !pieces;
+
+    print_bitboard_pos(attack, sq);
+    return (sq, attack);//board_serialize(attack);
+}
 
     pub fn gen_ray_attacks(&self, occupied: u64, dir: Dir, square: usize) -> u64 {
         //print_bitboard(occupied);
