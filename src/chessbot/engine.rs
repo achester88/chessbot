@@ -3,6 +3,8 @@ use bitboard::*;
 use board::*;
 use utils::*;
 
+type Move = (usize, usize, Board);
+
 #[derive(Debug, Clone, Copy)]
 pub enum Dir {
     North,
@@ -27,16 +29,30 @@ impl Engine {
             board: Board::new(init_pos),
         };
     }
+    //from, to, new board
+    pub fn gen_moves(&self) -> Vec<Move> {
 
-    pub fn gen_moves(self) -> Vec<(u8, u8)> {
+        let mut possable: Vec<(usize, u64)> = vec![];
         
-        if self.board.white_turn {
-          self.gen_queen_moves(34, self.board.white_pieces);
-          
-          //rooks
-          // bitscan check if rook, get pos, get moves
+        let queens = board_serialize(self.board.queens[self.board.turn]);
+        for i in queens {
+          possable.push(self.gen_queen_moves(i, self.board.pieces[self.board.turn]));
         }
-        return vec![];
+        
+        let mut all_moves: Vec<Move> = vec![];
+
+        for i in 0..possable.len() {
+          let (from, moves) = possable[i];
+          let moves_to = board_serialize(moves);
+
+          for i in 0..moves_to.len() {
+            let to = moves_to[i];
+            let new_board = self.board.move_piece(to, from);
+            all_moves.push((from, to, new_board));
+          }
+        }
+
+        return all_moves;
     }
 
     pub fn gen_rook_moves(&self, sq: usize, pieces: u64) -> (usize, u64) {
@@ -48,7 +64,7 @@ impl Engine {
 
         let attack = all_moves & !pieces;
 
-        print_bitboard_pos(attack, sq);
+        //print_bitboard_pos(attack, sq);
         return (sq, attack);//board_serialize(attack);
     }
 
@@ -61,7 +77,7 @@ impl Engine {
 
       let attack = all_moves & !pieces;
 
-      print_bitboard_pos(attack, sq);
+      //print_bitboard_pos(attack, sq);
       return (sq, attack);//board_serialize(attack);
   }
 
@@ -72,7 +88,7 @@ impl Engine {
 
     let attack = all_moves & !pieces;
 
-    print_bitboard_pos(attack, sq);
+    //print_bitboard_pos(attack, sq);
     return (sq, attack);//board_serialize(attack);
 }
 

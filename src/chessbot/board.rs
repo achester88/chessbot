@@ -1,29 +1,51 @@
-//use super::bitboard::{};
+use super::bitboard::{print_bitboard, print_bitboard_pos};
+use core::ops::Index;
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum PieceColor {
+    White,
+    Black
+}
+
+#[derive(Debug)]
+pub enum PieceType {
+    Pawn,
+    Bishop,
+    Knight,
+    Rook,
+    Queen,
+    King,
+    Empty,
+}
+
+impl Index<PieceColor> for [u64] {
+    type Output = u64;
+
+    fn index(&self, color: PieceColor) -> &Self::Output {
+        match color {
+            PieceColor::White => &self[0],
+            PieceColor::Black => &self[1]
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct Board {
-    pub white_pawns: u64,
-    pub white_bishops: u64,
-    pub white_knights: u64,
-    pub white_rooks: u64,
-    pub white_queens: u64,
-    pub white_king: u64,
+    pub pawns: [u64; 2],
+    pub bishops: [u64; 2],
+    pub knights: [u64; 2],
+    pub rooks: [u64; 2],
+    pub queens: [u64; 2],
+    pub kings: [u64; 2],
 
-    pub black_pawns: u64,
-    pub black_bishops: u64,
-    pub black_knights: u64,
-    pub black_rooks: u64,
-    pub black_queens: u64,
-    pub black_king: u64,
-
-    pub white_turn: bool,
+    pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
     pub en_passant: u8, //postion of avilbe en passant
     pub half_moves: u16,
     pub full_move: u64,
 
     pub occupied: u64,
-    pub black_pieces: u64,
-    pub white_pieces: u64,
+    pub pieces: [u64; 2],
 }
 
 impl Board {
@@ -116,33 +138,108 @@ impl Board {
         }
         //println!("{:?}", fen);
         return Board {
-            white_pawns: wp,
-            white_bishops: wb,
-            white_knights: wn,
-            white_rooks: wr,
-            white_queens: wq,
-            white_king: wk,
-            black_pawns: bp,
-            black_bishops: bb,
-            black_knights: bn,
-            black_rooks: br,
-            black_queens: bq,
-            black_king: bk,
-            white_turn: wt,
+            pawns: [wp, bp],
+            bishops: [wb, bb],
+            knights: [wk, bk],
+            rooks: [wr, br],
+            queens: [wq, bq],
+            kings: [wk, bk],
+            turn: if wt {PieceColor::White} else {PieceColor::Black},
             casling: casling,
             en_passant: ep,
             half_moves: hm,
             full_move: fm,
             occupied: wp | wb | wn | wr | wq | wk | bp | bb | bn | br | bq | bk,
-            black_pieces: bp | bb | bn | br | bq | bk,
-            white_pieces: wp | wb | wn | wr | wq | wk,
+            pieces: [wp | wb | wn | wr | wq | wk, bp | bb | bn | br | bq | bk],
+        };
+    }
+
+    /*fn get_pieces(&self, color: PieceColor, type_of: PieceType) -> u64 {
+        match type_of {
+            PieceType::Pawn => self.pawns[color],
+            _ => 0
+        }
+    }*/
+
+    fn lookup(&self, pos: usize) -> (PieceColor, PieceType) {
+        let board = 1 << pos;
+        
+        let mut color: PieceColor;
+
+        if board & self.pieces[PieceColor::White] != 0 { //White
+            println!("ggggg");
+            color = PieceColor::White;
+        } else { //Black
+            color = PieceColor::Black;
+        }
+
+        if board & (self.pawns[color] | self.bishops[color] | self.knights[color]) != 0 {
+            if board & self.pawns[color] != 0 {
+                return (color, PieceType::Pawn);
+            } else if board & self.bishops[color] != 0 {
+                return (color, PieceType::Bishop);
+            } else  { //knights
+                return (color, PieceType::Knight);
+            }
+        } else if board & (self.rooks[color] | self.queens[color] | self.kings[color]) != 0 {
+            if board & self.rooks[color] != 0 {
+                return (color, PieceType::Rook);
+            } else if board & self.queens[color] != 0 {
+                return (color, PieceType::Queen);
+            } else  { //kings
+                return (color, PieceType::King);
+            }
+        }
+
+        return (PieceColor::White, PieceType::Empty);
+    }
+
+    pub fn move_piece(&self, to: usize, from: usize) -> Board {
+        
+        let mut pawns = self.pawns;
+        let mut bishops = self.bishops;
+        let mut knights = self.knights;
+        let mut rooks = self.rooks;
+        let mut queens = self.queens;
+        let mut kings = self.kings;
+       
+        //-----------------------------
+
+        let (pc, pt) = self.lookup(from);
+        println!("{:?} : {:?}", pc, pt);
+        //let (old_pc, old_pt) = self.lookup(to);
+        //Delete old
+        
+        //Move new
+
+        //-----------------------------
+
+        let white_pieces = self.pawns[PieceColor::White] | self.bishops[PieceColor::White] | self.knights[PieceColor::White] |
+        self.rooks[PieceColor::White] | self.queens[PieceColor::White] | self.kings[PieceColor::White];
+        let black_pieces = self.pawns[PieceColor::Black] | self.bishops[PieceColor::Black] | self.knights[PieceColor::Black] |
+        self.rooks[PieceColor::Black] | self.queens[PieceColor::Black] | self.kings[PieceColor::Black];
+        // **** Recalc en_passant and casling *****
+        return Board {
+            pawns: pawns,
+            bishops: bishops,
+            knights: knights,
+            rooks: rooks,
+            queens: queens,
+            kings: kings,
+            turn: if self.turn == PieceColor::White {PieceColor::Black} else {PieceColor::White},
+            casling: self.casling,
+            en_passant: self.en_passant,
+            half_moves: self.half_moves + 1,
+            full_move: if self.half_moves % 2 == 0 {self.full_move + 1} else {self.full_move},
+            occupied: white_pieces | black_pieces,
+            pieces: [white_pieces, black_pieces],
         };
     }
 
     pub fn print_board(&self) {
         println!(
             "\n{} to move:",
-            (if self.white_turn { "White" } else { "Black" })
+            (if self.turn == PieceColor::White { "White" } else { "Black" })
         );
         println!("-----");
         for r in [7, 6, 5, 4, 3, 2, 1, 0] {
@@ -150,29 +247,29 @@ impl Board {
             for f in 0..8 {
                 let i = (r * 8) + f;
 
-                if ((self.white_pawns >> i) & 1) == 1 {
+                if ((self.pawns[PieceColor::Black] >> i) & 1) == 1 {
                     print!("P ");
-                } else if ((self.white_bishops >> i) & 1) == 1 {
+                } else if ((self.bishops[PieceColor::Black] >> i) & 1) == 1 {
                     print!("B ");
-                } else if ((self.white_knights >> i) & 1) == 1 {
+                } else if ((self.knights[PieceColor::Black] >> i) & 1) == 1 {
                     print!("N ");
-                } else if ((self.white_rooks >> i) & 1) == 1 {
+                } else if ((self.rooks[PieceColor::Black] >> i) & 1) == 1 {
                     print!("R ");
-                } else if ((self.white_queens >> i) & 1) == 1 {
+                } else if ((self.queens[PieceColor::Black] >> i) & 1) == 1 {
                     print!("Q ");
-                } else if ((self.white_king >> i) & 1) == 1 {
+                } else if ((self.kings[PieceColor::White] >> i) & 1) == 1 {
                     print!("K ");
-                } else if ((self.black_pawns >> i) & 1) == 1 {
+                } else if ((self.pawns[PieceColor::Black] >> i) & 1) == 1 {
                     print!("p ");
-                } else if ((self.black_bishops >> i) & 1) == 1 {
+                } else if ((self.bishops[PieceColor::Black] >> i) & 1) == 1 {
                     print!("b ");
-                } else if ((self.black_knights >> i) & 1) == 1 {
+                } else if ((self.knights[PieceColor::Black] >> i) & 1) == 1 {
                     print!("n ");
-                } else if ((self.black_rooks >> i) & 1) == 1 {
+                } else if ((self.rooks[PieceColor::Black] >> i) & 1) == 1 {
                     print!("r ");
-                } else if ((self.black_queens >> i) & 1) == 1 {
+                } else if ((self.queens[PieceColor::Black] >> i) & 1) == 1 {
                     print!("q ");
-                } else if ((self.black_king >> i) & 1) == 1 {
+                } else if ((self.kings[PieceColor::Black] >> i) & 1) == 1 {
                     print!("k ");
                 } else {
                     if i == self.en_passant {
