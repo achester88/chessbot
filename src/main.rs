@@ -6,8 +6,9 @@ use std::io::{stdin, stdout, Write};
 
 fn main() {
     //"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq e4 0 1"
-    let eng = Engine::new("2b5/8/8/2Q5/8/8/5R2/6n1 w - - 0 1");
-    eng.gen_moves();
+    let board = Board::new("2b5/8/8/2Q5/8/8/5R2/6n1 w - - 0 1");
+    let eng = Engine::new();
+    eng.gen_moves(board);
     /*loop {
         let _=stdout().flush();
         let mut input=String::new();

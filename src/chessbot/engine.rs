@@ -18,25 +18,23 @@ pub enum Dir {
 }
 
 pub struct Engine {
-    ray_attacks: Vec<Vec<u64>>,
-    board: Board,
+    ray_attacks: Vec<Vec<u64>>
 }
 
 impl Engine {
-    pub fn new(init_pos: &str) -> Self {
+    pub fn new() -> Self {
         return Engine {
-            ray_attacks: gen_attacks(),
-            board: Board::new(init_pos),
+            ray_attacks: gen_attacks()
         };
     }
     //from, to, new board
-    pub fn gen_moves(&self) -> Vec<Move> {
+    pub fn gen_moves(&self, board: Board) -> Vec<Move> {
 
         let mut possable: Vec<(usize, u64)> = vec![];
         
-        let queens = board_serialize(self.board.queens[self.board.turn]);
+        let queens = board_serialize(board.queens[board.turn]);
         for i in queens {
-          possable.push(self.gen_queen_moves(i, self.board.pieces[self.board.turn]));
+          possable.push(self.gen_queen_moves(&board, i, board.pieces[board.turn]));
         }
         
         let mut all_moves: Vec<Move> = vec![];
@@ -44,10 +42,11 @@ impl Engine {
         for i in 0..possable.len() {
           let (from, moves) = possable[i];
           let moves_to = board_serialize(moves);
-
+          board.print_board();
           for i in 0..moves_to.len() {
             let to = moves_to[i];
-            let new_board = self.board.move_piece(to, from);
+            let new_board = board.move_piece(to, from);
+            new_board.print_board();
             all_moves.push((from, to, new_board));
           }
         }
@@ -55,25 +54,25 @@ impl Engine {
         return all_moves;
     }
 
-    pub fn gen_rook_moves(&self, sq: usize, pieces: u64) -> (usize, u64) {
+    pub fn gen_rook_moves(&self, board: &Board, sq: usize, pieces: u64) -> (usize, u64) {
         let all_moves = 
-        self.gen_ray_attacks(self.board.occupied, Dir::North, sq) | 
-        self.gen_ray_attacks(self.board.occupied, Dir::South, sq) | 
-        self.gen_ray_attacks(self.board.occupied, Dir::East, sq) | 
-        self.gen_ray_attacks(self.board.occupied, Dir::West, sq);
+        self.gen_ray_attacks(board.occupied, Dir::North, sq) | 
+        self.gen_ray_attacks(board.occupied, Dir::South, sq) | 
+        self.gen_ray_attacks(board.occupied, Dir::East, sq) | 
+        self.gen_ray_attacks(board.occupied, Dir::West, sq);
 
         let attack = all_moves & !pieces;
 
-        //print_bitboard_pos(attack, sq);
+        //print_bitboard_pos(all_moves & !self.board.pieces[self.board.turn], sq);
         return (sq, attack);//board_serialize(attack);
     }
 
-    pub fn gen_bishop_moves(&self, sq: usize, pieces: u64) -> (usize, u64) {
+    pub fn gen_bishop_moves(&self, board: &Board, sq: usize, pieces: u64) -> (usize, u64) {
       let all_moves = 
-      self.gen_ray_attacks(self.board.occupied, Dir::NOEA, sq) | 
-      self.gen_ray_attacks(self.board.occupied, Dir::NOWE, sq) | 
-      self.gen_ray_attacks(self.board.occupied, Dir::SOEA, sq) | 
-      self.gen_ray_attacks(self.board.occupied, Dir::SOWE, sq);
+      self.gen_ray_attacks(board.occupied, Dir::NOEA, sq) | 
+      self.gen_ray_attacks(board.occupied, Dir::NOWE, sq) | 
+      self.gen_ray_attacks(board.occupied, Dir::SOEA, sq) | 
+      self.gen_ray_attacks(board.occupied, Dir::SOWE, sq);
 
       let attack = all_moves & !pieces;
 
@@ -81,12 +80,12 @@ impl Engine {
       return (sq, attack);//board_serialize(attack);
   }
 
-  pub fn gen_queen_moves(&self, sq: usize, pieces: u64) -> (usize, u64) {
-    let all_moves = 
-    self.gen_rook_moves(sq, self.board.occupied).1 | 
-    self.gen_bishop_moves(sq, self.board.occupied).1;
+  pub fn gen_queen_moves(&self, board: &Board, sq: usize, pieces: u64) -> (usize, u64) {
+    let attack = 
+    self.gen_rook_moves(board, sq, pieces).1 | 
+    self.gen_bishop_moves(board, sq, pieces).1;
 
-    let attack = all_moves & !pieces;
+    //let attack = all_moves & !pieces;
 
     //print_bitboard_pos(attack, sq);
     return (sq, attack);//board_serialize(attack);
