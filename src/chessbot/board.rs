@@ -18,6 +18,11 @@ pub enum PieceType {
     Empty,
 }
 
+enum OP {
+    AND,
+    OR
+}
+
 impl Index<PieceColor> for [u64] {
     type Output = u64;
 
@@ -54,7 +59,7 @@ pub struct Board {
     pub full_move: u64,
 
     pub occupied: u64,
-    pub pieces: [u64; 2],
+    pub pieces: [u64; 2], //All piece of the same color
 }
 
 impl Board {
@@ -77,19 +82,28 @@ impl Board {
         let mut ep: u8 = 65;
         let mut hm = 0;
         let mut fm = 1;
-        let mut i = 0;
+        let mut i = 64;
+        let mut f = 0;
+        let mut r = 7;
         let fen: Vec<&str> = fen_str.split(" ").collect();
 
         //postion
-        let pos = fen[0].replace("/", "");
+        let pos = fen[0];//fen[0].replace("/", "");
         let pos_vec: Vec<char> = pos.chars().collect();
         for c in pos_vec {
-            if c.is_numeric() {
+            if c == '/' {
+                r -= 1;
+                f = 0;
+            }
+            else if c.is_numeric() {
                 //println!("{}", c);
-                i += c.to_digit(10).unwrap() as usize;
+                //i -= c.to_digit(10).unwrap() as usize;
+                f += c.to_digit(10).unwrap() as usize;
             } else {
                 //println!("{}", c);
-                let s = 1 << (63 - i); //set bit of i;
+                let s = 1 << ((r * 8) + f); //set bit of i;
+                //(1 << n)
+                //print_bitboard(s);
                 match c {
                     'P' => wp = wp | s,
                     'B' => wb = wb | s,
@@ -107,7 +121,8 @@ impl Board {
                     _ => {}
                 };
 
-                i += 1;
+                //i -= 1;
+                f += 1;
             }
         }
         //turn
@@ -131,9 +146,9 @@ impl Board {
         //En Passant
         if fen[3] != "-" {
             let square: Vec<char> = fen[3].chars().collect();
-            let f = (square[0].to_ascii_lowercase() as u8) - 97; //a:0, h:9
+            let f = (square[0].to_ascii_lowercase() as u8) - 96; //a:0, h:9
             let r = square[1].to_digit(10).unwrap() as u8;
-            //println!("{}:{} = {}", r, f, (r*8)+f);
+            println!("{}:{} = {}", r, f, (r*8)+f);
             ep = ((r - 1) * 8) + (f - 1);
         }
 
@@ -149,7 +164,7 @@ impl Board {
         return Board {
             pawns: [wp, bp],
             bishops: [wb, bb],
-            knights: [wk, bk],
+            knights: [wn, bn],
             rooks: [wr, br],
             queens: [wq, bq],
             kings: [wk, bk],
@@ -219,17 +234,40 @@ impl Board {
         //println!("{:?} : {:?}", pc, pt);
         //print_bitboard(1 << to);
         let (old_pc, old_pt) = self.lookup(to);
-        println!("{:?} : {:?}", old_pc, old_pt);
+        //println!("{:?} : {:?}", old_pc, old_pt);
         //Delete old
-            match old_pt {
-                PieceType::Pawn => {pawns[old_pc] = pawns[old_pc] & !(1 << to)},
-                PieceType::Bishop => {bishops[old_pc] = bishops[old_pc] & !(1 << to)},
-                PieceType::Knight => {knights[old_pc] = knights[old_pc] & !(1 << to)},
-                PieceType::Rook => {rooks[old_pc] = rooks[old_pc] & !(1 << to)},
-                PieceType::Queen => {queens[old_pc] = queens[old_pc] & !(1 << to)},
-                PieceType::King => {kings[old_pc] = kings[old_pc] & !(1 << to)},
-                PieceType::Empty => ()
-            };
+
+        //Check if en_passant needs updating
+        let mut en_passant: u8 = 65;
+        if pt == PieceType::Pawn {
+           if (to-16) == from && from > 7 && from < 16 { //white
+               en_passant = (to as u8) - 8; //south_one
+           } else if to > 15 && (to-16) == from && from > 47 && from < 56 { //black
+                      en_passant = (to as u8) + 8; //north_one
+           } 
+
+            if to == self.en_passant as usize {
+                //remove pawn at en_pass
+                match self.turn {
+                    PieceColor::White => pawns[PieceColor::Black] = pawns[PieceColor::Black] & !(1 << self.en_passant - 8),
+                    PieceColor::Black => pawns[PieceColor::White] = pawns[PieceColor::White] & !(1 << self.en_passant + 8),
+                };
+                
+                
+            }
+        } //Update in new board
+           
+        
+        match old_pt {
+            PieceType::Pawn => {pawns[old_pc] = pawns[old_pc] & !(1 << to)},
+            PieceType::Bishop => {bishops[old_pc] = bishops[old_pc] & !(1 << to)},
+            PieceType::Knight => {knights[old_pc] = knights[old_pc] & !(1 << to)},
+            PieceType::Rook => {rooks[old_pc] = rooks[old_pc] & !(1 << to)},
+            PieceType::Queen => {queens[old_pc] = queens[old_pc] & !(1 << to)},
+            PieceType::King => {kings[old_pc] = kings[old_pc] & !(1 << to)},
+            PieceType::Empty => ()
+        };
+        
         //Move new
         match pt {
             PieceType::Pawn => {pawns[pc] = pawns[pc] & !(1 << from)},
@@ -268,7 +306,7 @@ impl Board {
             kings: kings,
             turn: if self.turn == PieceColor::White {PieceColor::Black} else {PieceColor::White},
             casling: self.casling,
-            en_passant: self.en_passant,
+            en_passant: en_passant, //IMPORTANT CHECK IF EN PASANT IS POSSABLE *******************
             half_moves: self.half_moves + 1,
             full_move: if self.half_moves % 2 == 0 && self.half_moves != 0 {self.full_move + 1} else {self.full_move},
             occupied: white_pieces | black_pieces,
