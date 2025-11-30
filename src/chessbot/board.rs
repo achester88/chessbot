@@ -43,7 +43,7 @@ impl IndexMut<PieceColor> for [u64; 2] {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Board {
     pub pawns: [u64; 2],
     pub bishops: [u64; 2],
@@ -189,7 +189,7 @@ impl Board {
         }
     }*/
 
-    fn lookup(&self, pos: usize) -> (PieceColor, PieceType) {
+    pub fn lookup(&self, pos: usize) -> (PieceColor, PieceType) {
         let board = 1 << pos;
 
         let mut color: PieceColor;
@@ -330,18 +330,19 @@ impl Board {
 
         //-----------------------------
 
-        let white_pieces = self.pawns[PieceColor::White]
-            | self.bishops[PieceColor::White]
-            | self.knights[PieceColor::White]
-            | self.rooks[PieceColor::White]
-            | self.queens[PieceColor::White]
-            | self.kings[PieceColor::White];
+        let white_pieces = pawns[PieceColor::White]
+           | bishops[PieceColor::White]
+           | knights[PieceColor::White]
+           | rooks[PieceColor::White]
+           | queens[PieceColor::White]
+           | kings[PieceColor::White];
         let black_pieces = self.pawns[PieceColor::Black]
-            | self.bishops[PieceColor::Black]
-            | self.knights[PieceColor::Black]
-            | self.rooks[PieceColor::Black]
-            | self.queens[PieceColor::Black]
-            | self.kings[PieceColor::Black];
+           | bishops[PieceColor::Black]
+           | knights[PieceColor::Black]
+           | rooks[PieceColor::Black]
+           | queens[PieceColor::Black]
+           | kings[PieceColor::Black];
+
         return Board {
             pawns: pawns.try_into().unwrap(),
             bishops: bishops,

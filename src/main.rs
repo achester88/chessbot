@@ -7,9 +7,10 @@ use std::io::{stdin, stdout, Write};
 fn main() {
     //"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq e4 0 1"
     //let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    let board = Board::new("8/8/8/8/3K4/8/8/8 w - - 0 1");
+    //let board = Board::new("8/8/8/8/3K4/8/8/8 w - - 0 1");
+    let board = Board::new("8/8/8/8/8/4R3/8/8 w - - 0 1");
     let eng = Engine::new();
-    eng.gen_moves(board);
+    println!("{:?}", eng.gen_moves(board));
     /*loop {
         let _=stdout().flush();
         let mut input=String::new();

@@ -3,7 +3,8 @@ use bitboard::*;
 use board::*;
 use utils::*;
 
-type Move = (usize, usize, Board);
+//          (from,  to,    new board)
+pub type Move = (usize, usize, Board);
 
 #[derive(Debug, Clone, Copy)]
 pub enum Dir {
@@ -44,27 +45,27 @@ impl Engine {
 
         let queens = board_serialize(board.queens[board.turn]);
         for i in queens {
-            //possable.push(self.gen_queen_moves(&board, i, board.pieces[board.turn]));
+            possable.push(self.gen_queen_moves(&board, i, board.pieces[board.turn]));
         }
 
         let bishops = board_serialize(board.bishops[board.turn]);
         for i in bishops {
-            //possable.push(self.gen_bishops_moves(&board, i, board.pieces[board.turn]));
+            possable.push(self.gen_bishop_moves(&board, i, board.pieces[board.turn]));
         }
 
         let rooks = board_serialize(board.rooks[board.turn]);
         for i in rooks {
-            //possable.push(self.gen_rooks_moves(&board, i, board.pieces[board.turn]));
+            possable.push(self.gen_rook_moves(&board, i, board.pieces[board.turn]));
         }
 
         let pawns = board_serialize(board.pawns[board.turn]);
         for i in pawns {
-            //possable.push(self.gen_pawn_moves(&board, i));
+            possable.push(self.gen_pawn_moves(&board, i));
         }
 
         let kings = board_serialize(board.kings[board.turn]);
         for i in kings {
-            //possable.push(self.gen_king_moves(&board, i));
+            possable.push(self.gen_king_moves(&board, i));
         }
 
         let knight = board_serialize(board.knights[board.turn]);
