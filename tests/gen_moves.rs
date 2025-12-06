@@ -4,9 +4,6 @@ use board::{Board};
 use engine::{Engine};
 use bitboard::{print_bitboard_pos};
 
-mod common;
-use common::{fen_arr, one_piece_move};
-
 #[test]
 fn pawn_empty() {
     let board = Board::new("8/8/8/8/8/4P3/8/8 w - - 0 1");

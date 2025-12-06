@@ -41,6 +41,8 @@ impl Engine {
         board.print_board();
         println!("\n");
 
+        let mut all_moves: Vec<Move> = vec![];
+
         let mut possable: Vec<(usize, u64)> = vec![];
 
         let queens = board_serialize(board.queens[board.turn]);
@@ -60,7 +62,15 @@ impl Engine {
 
         let pawns = board_serialize(board.pawns[board.turn]);
         for i in pawns {
-            possable.push(self.gen_pawn_moves(&board, i));
+            let (from, moves) = self.gen_pawn_moves(&board, i);
+
+            if moves & 0xff00000000000000 != 0 {
+                let to = board_serialize(moves)[0];
+                //let new_board = board.promote(from, to);
+                all_moves.append(&mut (board.promote(from, to))); //64 out of range, no piece
+            } else {
+                possable.push((from, moves));
+            }
         }
 
         let kings = board_serialize(board.kings[board.turn]);
@@ -73,7 +83,7 @@ impl Engine {
             possable.push(self.gen_knight_moves(&board, i));
         }
 
-        let mut all_moves: Vec<Move> = vec![];
+
 
         for i in 0..possable.len() {
             let (from, moves) = possable[i];
