@@ -101,7 +101,6 @@ impl Engine {
         PieceColor::White => board.pieces[PieceColor::Black],
         PieceColor::Black => board.pieces[PieceColor::White],
         };
-
         let mut attacks = self.knight_attacks[sq] & (!board.occupied | opp);
 
         return (sq, attacks);
@@ -337,7 +336,7 @@ fn gen_king_attacks() -> Vec<u64> {
     
     let mut attacks: Vec<u64> = vec![0; 64];
 
-    for i in 0..63 {
+    for i in 0..64 {
         let mut pos = 1 << i;
 
         pos |= postshift::east_one(pos) | postshift::west_one(pos);
@@ -353,7 +352,7 @@ fn gen_knight_attacks() -> Vec<u64> {
 
     let mut attacks: Vec<u64> = vec![0; 64];
 
-    for i in 0..63 {
+    for i in 0..64 {
         let pos = 1 << i;
         let mut attack = 0;
         attack |= postshift::no_ea_one(postshift::nort_one(pos));
