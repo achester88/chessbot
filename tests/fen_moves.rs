@@ -1,6 +1,6 @@
-use chessbot::chessbot::bitboard::print_bitboard_pos;
-use chessbot::chessbot::board::Board;
-use chessbot::chessbot::engine::Engine;
+use chessbot::chessbot::bitboard::{print_bitboard, print_bitboard_pos};
+use chessbot::chessbot::board::{Board, PieceColor};
+use chessbot::chessbot::engine::{Engine, Move};
 
 mod common;
 use common::{fen_arr};
@@ -145,27 +145,42 @@ fn pawn_capture_promote() {
     )));
 }
 
+//TODO TEST KING CAPTURE CHECK?
+
 #[test]
 fn king_check() {
     let mut board = Board::new("7b/8/8/4K3/7B/8/8/8 w - - 0 1");
-    board.check = 0x8040201000000000;
+    //board.check = 0x8040201000000000;
     let eng = Engine::new();
+
+    let mut kingless = board.clone();
+    kingless.kings[PieceColor::White] = 0;
+    kingless.recalc_board();
+
+    let (_from, checkinner) = eng.gen_bishop_moves(&board, 63, board.pieces[PieceColor::Black as usize]);
+    let (_from, checkouter) = eng.gen_bishop_moves(&kingless, 63, board.pieces[PieceColor::Black as usize]);
+
+    print_bitboard(checkinner | (1 << 63));
+    print_bitboard(checkouter);
+
+    board.check_real = checkinner | (1 << 63);
+    board.check_full = checkouter;
     //println!("{:?}", eng.gen_bishop_moves(&board, 63, board.pieces[board.turn]));
 
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
-    let mut fen_moves = fen_arr(31, vec!(
-        (45, "7b/8/5B2/4K3/8/8/8/8 b - - 1 1"),
-    ));
-
-    fen_moves.append(&mut fen_arr(36, vec!(
+    let mut fen_moves = fen_arr(36, vec!(
         (28,  "7b/8/8/8/4K2B/8/8/8 b - - 1 1"),
         (29, "7b/8/8/8/5K1B/8/8/8 b - - 1 1"),
         (35, "7b/8/8/3K4/7B/8/8/8 b - - 1 1"),
         (37,  "7b/8/8/5K2/7B/8/8/8 b - - 1 1"),
         (43, "7b/8/3K4/8/7B/8/8/8 b - - 1 1"),
         (44,  "7b/8/4K3/8/7B/8/8/8 b - - 1 1"),
+    ));
+
+    fen_moves.append(&mut fen_arr(31, vec!(
+        (45, "7b/8/5B2/4K3/8/8/8/8 b - - 1 1"),
     )));
 
     assert_eq!(moves, fen_moves);

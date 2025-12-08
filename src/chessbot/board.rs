@@ -56,7 +56,8 @@ pub struct Board {
     pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
     pub en_passant: u8, //postion of avilbe en passant
-    pub check: u64,
+    pub check_real: u64,
+    pub check_full: u64,
     pub half_moves: u16,
     pub full_move: u64,
 
@@ -174,7 +175,8 @@ impl Board {
                 PieceColor::Black
             },
             casling: casling,
-            check: 0, //TODO CHECK IF ANY KING IS IN CHECK AND BY WHO
+            check_real: 0, //TODO CHECK IF ANY KING IS IN CHECK AND BY WHO
+            check_full: 0,
             en_passant: ep,
             half_moves: hm,
             full_move: fm,
@@ -241,7 +243,9 @@ impl Board {
         //Delete old
 
         //SET CHECK BY AND WITH PIECE ATTACKS AND KING POS
-        //STROGE POS OF ATTACK IN CHECK
+        //STORE POS OF ATTACK IN CHECK
+        //IF CHECK AND ALREADY IN CHECK DISGUARD MOVE
+        //GEN CHECK VAL OF BOARD WITHOUT KING
 
         //Check if en_passant needs updating
         if pt == PieceType::Pawn {
@@ -334,25 +338,31 @@ impl Board {
 
         //-----------------------------
 
-        let white_pieces = new_board.pawns[PieceColor::White]
-           | new_board.bishops[PieceColor::White]
-           | new_board.knights[PieceColor::White]
-           | new_board.rooks[PieceColor::White]
-           | new_board.queens[PieceColor::White]
-           | new_board.kings[PieceColor::White];
-        let black_pieces = new_board.pawns[PieceColor::Black]
-           | new_board.bishops[PieceColor::Black]
-           | new_board.knights[PieceColor::Black]
-           | new_board.rooks[PieceColor::Black]
-           | new_board.queens[PieceColor::Black]
-           | new_board.kings[PieceColor::Black];
+        new_board.update_check();
+
+        new_board.recalc_board();
 
         new_board.next_turn();
 
-        new_board.occupied = white_pieces | black_pieces;
-        new_board.pieces = [white_pieces, black_pieces];
-
         return new_board;
+    }
+
+    pub fn recalc_board(&mut self) {
+        let white_pieces = self.pawns[PieceColor::White]
+            | self.bishops[PieceColor::White]
+            | self.knights[PieceColor::White]
+            | self.rooks[PieceColor::White]
+            | self.queens[PieceColor::White]
+            | self.kings[PieceColor::White];
+        let black_pieces = self.pawns[PieceColor::Black]
+            | self.bishops[PieceColor::Black]
+            | self.knights[PieceColor::Black]
+            | self.rooks[PieceColor::Black]
+            | self.queens[PieceColor::Black]
+            | self.kings[PieceColor::Black];
+
+        self.occupied = white_pieces | black_pieces;
+        self.pieces = [white_pieces, black_pieces];
     }
 
     pub fn promote(&self, from: usize, to: usize) -> Vec<Move> {
@@ -508,5 +518,10 @@ impl Board {
         println!("Fullmoves: {}", self.full_move);
 
         println!();
+    }
+
+    fn update_check(&mut self) { //TODO START HERE
+        self.check_real = 0;
+        self.check_full = 0;
     }
 }

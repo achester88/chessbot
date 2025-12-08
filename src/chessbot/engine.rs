@@ -74,8 +74,27 @@ impl Engine {
         }
 
         let kings = board_serialize(board.kings[board.turn]);
-        for i in kings {
-            possable.push(self.gen_king_moves(&board, i));
+        if board.check_real != 0 {
+            for i in kings {
+                let (from, moves) = self.gen_king_moves(&board, i);
+                let moves_to = board_serialize(moves);
+
+                for i in 0..moves_to.len() {
+                    let to = moves_to[i];
+                    println!("----{:?} {:?}-----", from, to);
+                    print_bitboard((1 << to));
+                    print_bitboard(board.check_full);
+                    print_bitboard((1 << to) & board.check_full);
+                    println!("---------------------");
+                    if (1 << to) & board.check_full == 0 {
+                        all_moves.push((from, to, board.move_piece(to, from)));
+                    }
+                }
+            }
+        } else {
+            for i in kings {
+                possable.push(self.gen_king_moves(&board, i));
+            }
         }
 
         let knight = board_serialize(board.knights[board.turn]);
@@ -92,7 +111,7 @@ impl Engine {
             for i in 0..moves_to.len() {
                 let to = moves_to[i];
 
-                if board.check == 0 || board.check & (1 << to) != 0 { //Not in check or to is in (check)
+                if board.check_real == 0 || board.check_real & (1 << to) != 0 { //Not in check or to is in (check)
                     //TODO FOR KING CHECK IF MOVE GET HIM OUT OF CHECK
                     let new_board = board.move_piece(to, from);
                     new_board.print_board();
