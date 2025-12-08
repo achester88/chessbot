@@ -64,7 +64,7 @@ impl Engine {
         for i in pawns {
             let (from, moves) = self.gen_pawn_moves(&board, i);
 
-            if moves & 0xff00000000000000 != 0 {
+            if moves & 0xff00000000000000 != 0 || moves & 0xff != 0 {
                 let to = board_serialize(moves)[0];
                 //let new_board = board.promote(from, to);
                 all_moves.append(&mut (board.promote(from, to))); //64 out of range, no piece
@@ -91,9 +91,15 @@ impl Engine {
             //board.print_board();
             for i in 0..moves_to.len() {
                 let to = moves_to[i];
-                let new_board = board.move_piece(to, from);
-                new_board.print_board();
-                all_moves.push((from, to, new_board));
+
+                if board.check == 0 || board.check & (1 << to) != 0 { //Not in check or to is in (check)
+                    //TODO FOR KING CHECK IF MOVE GET HIM OUT OF CHECK
+                    let new_board = board.move_piece(to, from);
+                    new_board.print_board();
+                    all_moves.push((from, to, new_board));
+                }
+
+
             }
         }
 

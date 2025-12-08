@@ -38,3 +38,5 @@ fn main() {
 */
 
 //https://shaack.com/projekte/cm-fen-editor/
+
+//      󰡜 󰡗 󰡘 󰡙 󰡚 󰡛   NERD FONT

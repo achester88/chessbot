@@ -56,7 +56,7 @@ pub struct Board {
     pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
     pub en_passant: u8, //postion of avilbe en passant
-    pub check: bool,
+    pub check: u64,
     pub half_moves: u16,
     pub full_move: u64,
 
@@ -174,7 +174,7 @@ impl Board {
                 PieceColor::Black
             },
             casling: casling,
-            check: false,
+            check: 0, //TODO CHECK IF ANY KING IS IN CHECK AND BY WHO
             en_passant: ep,
             half_moves: hm,
             full_move: fm,
@@ -240,31 +240,39 @@ impl Board {
         //println!("{:?} : {:?}", old_pc, old_pt);
         //Delete old
 
-        //Check if en_passant needs updating
-        let mut en_passant: u8 = 65;
-        if pt == PieceType::Pawn {
-            if (to - 16) == from && from > 7 && from < 16 {
-                //white
-                en_passant = (to as u8) - 8; //south_one
-            } else if to > 15 && (to - 16) == from && from > 47 && from < 56 {
-                //black
-                en_passant = (to as u8) + 8; //north_one
-            }
+        //SET CHECK BY AND WITH PIECE ATTACKS AND KING POS
+        //STROGE POS OF ATTACK IN CHECK
 
-            if to == self.en_passant as usize {
+        //Check if en_passant needs updating
+        if pt == PieceType::Pawn {
+
+            if to == new_board.en_passant as usize {
                 //remove pawn at en_pass
-                match self.turn {
+                match new_board.turn {
                     PieceColor::White => {
                         new_board.pawns[PieceColor::Black] =
                             new_board.pawns[PieceColor::Black] & !(1 << new_board.en_passant - 8)
                     }
                     PieceColor::Black => {
                         new_board.pawns[PieceColor::White] =
-                            self.pawns[PieceColor::White] & !(1 << new_board.en_passant + 8)
+                            new_board.pawns[PieceColor::White] & !(1 << new_board.en_passant + 8)
                     }
                 };
             }
-        } //Update in new board
+
+            if (to - 16) == from && from > 7 && from < 16 {
+                //white
+                new_board.en_passant = (to as u8) - 8; //south_one
+            } else if to > 15 && (to - 16) == from && from > 47 && from < 56 {
+                //black
+                new_board.en_passant = (to as u8) + 8; //north_one
+            } else {
+                new_board.en_passant = 65;
+            }
+        } else {
+            new_board.en_passant = 65;
+        }
+        //Update in new board
 
 
         //CHECK FOR CHECK

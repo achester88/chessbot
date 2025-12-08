@@ -15,7 +15,7 @@ fn pawn_base() {
     assert_eq!(moves, fen_arr(10, vec!(
         (18, "8/8/8/8/8/2Pp4/8/8 b - - 1 1"),
         (19, "8/8/8/8/8/3P4/8/8 b - - 1 1"),
-        (26, "8/8/8/8/2P5/3p4/8/8 b - - 1 1"),
+        (26, "8/8/8/8/2P5/3p4/8/8 b - c3 1 1"),
     )));
 }
 
@@ -86,6 +86,20 @@ fn queen_base() {
     assert_eq!(moves, fen_moves);
 }
 
+//en_passant
+#[test]
+fn pawn_en_passant() {
+    let board = Board::new("8/8/8/3Pp3/8/8/8/8 w - e6 0 1");
+    let eng = Engine::new();
+    let moves = eng.gen_moves(board);
+    println!("Moves: {:?}", moves);
+
+    assert_eq!(moves, fen_arr(35, vec!(
+        (43, "8/8/3P4/4p3/8/8/8/8 b - - 1 1"),
+        (44, "8/8/4P3/8/8/8/8/8 b - - 1 1")
+    )));
+}
+
 #[test]
 fn pawn_promote() {
     let board = Board::new("8/1P6/8/8/8/8/8/8 w - - 0 1");
@@ -102,6 +116,21 @@ fn pawn_promote() {
 }
 
 #[test]
+fn pawn_promote_black() {
+    let board = Board::new("8/8/8/8/8/8/1p6/8 b - - 1 1");
+    let eng = Engine::new();
+    let moves = eng.gen_moves(board);
+    println!("Moves: {:?}", moves);
+
+    assert_eq!(moves, fen_arr(09, vec!(
+        (01, "8/8/8/8/8/8/8/1n6 w - - 2 2"),
+        (01, "8/8/8/8/8/8/8/1b6 w - - 2 2"),
+        (01, "8/8/8/8/8/8/8/1r6 w - - 2 2"),
+        (01, "8/8/8/8/8/8/8/1q6 w - - 2 2")
+    )));
+}
+
+#[test]
 fn pawn_capture_promote() {
     let board = Board::new("1p6/2P5/8/8/8/8/8/8 w - - 0 1");
     let eng = Engine::new();
@@ -114,4 +143,30 @@ fn pawn_capture_promote() {
         (57, "1R6/8/8/8/8/8/8/8 b - - 1 1"),
         (57, "1Q6/8/8/8/8/8/8/8 b - - 1 1")
     )));
+}
+
+#[test]
+fn king_check() {
+    let mut board = Board::new("7b/8/8/4K3/7B/8/8/8 w - - 0 1");
+    board.check = 0x8040201000000000;
+    let eng = Engine::new();
+    //println!("{:?}", eng.gen_bishop_moves(&board, 63, board.pieces[board.turn]));
+
+    let moves = eng.gen_moves(board);
+    println!("Moves: {:?}", moves);
+
+    let mut fen_moves = fen_arr(31, vec!(
+        (45, "7b/8/5B2/4K3/8/8/8/8 b - - 1 1"),
+    ));
+
+    fen_moves.append(&mut fen_arr(36, vec!(
+        (28,  "7b/8/8/8/4K2B/8/8/8 b - - 1 1"),
+        (29, "7b/8/8/8/5K1B/8/8/8 b - - 1 1"),
+        (35, "7b/8/8/3K4/7B/8/8/8 b - - 1 1"),
+        (37,  "7b/8/8/5K2/7B/8/8/8 b - - 1 1"),
+        (43, "7b/8/3K4/8/7B/8/8/8 b - - 1 1"),
+        (44,  "7b/8/4K3/8/7B/8/8/8 b - - 1 1"),
+    )));
+
+    assert_eq!(moves, fen_moves);
 }
