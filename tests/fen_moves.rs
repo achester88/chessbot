@@ -21,20 +21,20 @@ fn pawn_base() {
 
 #[test]
 fn knight_base() {
-    let board = Board::new("8/8/2k2n2/8/2pNp3/1r6/4p3/8 w - - 0 1");
+    let board = Board::new("8/8/2p2n2/8/2pNp3/1r6/4p3/8 w - - 0 1");
     let eng = Engine::new();
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
     assert_eq!(moves, fen_arr(27, vec!(
-        (10, "8/8/2k2n2/8/2p1p3/1r6/2N1p3/8 b - - 1 1"),
-        (12, "8/8/2k2n2/8/2p1p3/1r6/4N3/8 b - - 1 1"),
-        (17, "8/8/2k2n2/8/2p1p3/1N6/4p3/8 b - - 1 1"),
-        (21, "8/8/2k2n2/8/2p1p3/1r3N2/4p3/8 b - - 1 1"),
-        (33, "8/8/2k2n2/1N6/2p1p3/1r6/4p3/8 b - - 1 1"),
-        (37, "8/8/2k2n2/5N2/2p1p3/1r6/4p3/8 b - - 1 1"),
+        (10, "8/8/2p2n2/8/2p1p3/1r6/2N1p3/8 b - - 1 1"),
+        (12, "8/8/2p2n2/8/2p1p3/1r6/4N3/8 b - - 1 1"),
+        (17, "8/8/2p2n2/8/2p1p3/1N6/4p3/8 b - - 1 1"),
+        (21, "8/8/2p2n2/8/2p1p3/1r3N2/4p3/8 b - - 1 1"),
+        (33, "8/8/2p2n2/1N6/2p1p3/1r6/4p3/8 b - - 1 1"),
+        (37, "8/8/2p2n2/5N2/2p1p3/1r6/4p3/8 b - - 1 1"),
         (42, "8/8/2N2n2/8/2p1p3/1r6/4p3/8 b - - 1 1"),
-        (44, "8/8/2k1Nn2/8/2p1p3/1r6/4p3/8 b - - 1 1"),
+        (44, "8/8/2p1Nn2/8/2p1p3/1r6/4p3/8 b - - 1 1"),
     )));
 }
 
@@ -153,19 +153,10 @@ fn king_check() {
     //board.check = 0x8040201000000000;
     let eng = Engine::new();
 
-    let mut kingless = board.clone();
-    kingless.kings[PieceColor::White] = 0;
-    kingless.recalc_board();
+    let (check_real, check_full) = eng.gen_check_info(&board, 63);
 
-    let (_from, checkinner) = eng.gen_bishop_moves(&board, 63, board.pieces[PieceColor::Black as usize]);
-    let (_from, checkouter) = eng.gen_bishop_moves(&kingless, 63, board.pieces[PieceColor::Black as usize]);
-
-    print_bitboard(checkinner | (1 << 63));
-    print_bitboard(checkouter);
-
-    board.check_real = checkinner | (1 << 63);
-    board.check_full = checkouter;
-    //println!("{:?}", eng.gen_bishop_moves(&board, 63, board.pieces[board.turn]));
+    board.check_real = check_real;
+    board.check_full = check_full;
 
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
@@ -184,4 +175,82 @@ fn king_check() {
     )));
 
     assert_eq!(moves, fen_moves);
+}
+
+#[test]
+fn king_to_check() {
+    let mut board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1");
+    let eng = Engine::new();
+
+    let moves = eng.gen_moves(board);
+    println!("Moves: {:?}", moves);
+
+    let mut fen_moves: Vec<Move> = vec![];
+
+    let mut checked_board = Board::new("5k2/4P3/8/8/8/8/8/3K4 b - - 1 1");
+
+    let (check_real, check_full) = eng.gen_check_info(&board, 44);
+
+    checked_board.check_real = 0x10000000000000;//check_real;
+    checked_board.check_full = 0x2000000000000000;
+
+    fen_moves.push((44, 52, checked_board));
+
+    fen_moves.append(&mut fen_arr(03, vec!(
+        (02, "5k2/8/4P3/8/8/8/8/2K5 b - - 1 1"),
+        (04, "5k2/8/4P3/8/8/8/8/4K3 b - - 1 1"),
+        (10, "5k2/8/4P3/8/8/8/2K5/8 b - - 1 1"),
+        (11, "5k2/8/4P3/8/8/8/3K4/8 b - - 1 1"),
+        (12, "5k2/8/4P3/8/8/8/4K3/8 b - - 1 1"),
+
+    )));
+
+    assert_eq!(moves, fen_moves);
+}
+
+#[test]
+fn king_to_check_next() {
+    let mut board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1");
+    let eng = Engine::new();
+
+    let moves = eng.gen_moves(board);
+    println!("Moves: {:?}", moves);
+
+    let mut fen_moves: Vec<Move> = vec![];
+
+    let mut checked_board = Board::new("5k2/4P3/8/8/8/8/8/3K4 b - - 1 1");
+
+    let (check_real, check_full) = eng.gen_check_info(&board, 44);
+
+    checked_board.check_real = 0x10000000000000;//check_real;
+    checked_board.check_full = 0x2000000000000000;
+
+    fen_moves.push((44, 52, checked_board));
+
+    fen_moves.append(&mut fen_arr(03, vec!(
+        (02, "5k2/8/4P3/8/8/8/8/2K5 b - - 1 1"),
+        (04, "5k2/8/4P3/8/8/8/8/4K3 b - - 1 1"),
+        (10, "5k2/8/4P3/8/8/8/2K5/8 b - - 1 1"),
+        (11, "5k2/8/4P3/8/8/8/3K4/8 b - - 1 1"),
+        (12, "5k2/8/4P3/8/8/8/4K3/8 b - - 1 1"),
+
+    )));
+
+    assert_eq!(moves, fen_moves);
+
+    let (_, _, next_board) = moves[0];
+    println!("###########################");
+    next_board.print_board();
+
+    let next_moves = eng.gen_moves(next_board);
+
+    assert_eq!(next_moves, fen_arr(61, vec!(
+        (52, "8/4k3/8/8/8/8/8/3K4 w - - 2 2"),
+
+        (53, "8/4Pk2/8/8/8/8/8/3K4 w - - 2 2"),
+        (54, "8/4P1k1/8/8/8/8/8/3K4 w - - 2 2"),
+        (60, "4k3/4P3/8/8/8/8/8/3K4 w - - 2 2"),
+        (62, "6k1/4P3/8/8/8/8/8/3K4 w - - 2 2"),
+    )));
+
 }

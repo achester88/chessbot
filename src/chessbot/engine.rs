@@ -62,7 +62,7 @@ impl Engine {
 
         let pawns = board_serialize(board.pawns[board.turn]);
         for i in pawns {
-            let (from, moves) = self.gen_pawn_moves(&board, i);
+            let (from, moves) = self.gen_pawn_moves(&board, i, board.turn);
 
             if moves & 0xff00000000000000 != 0 || moves & 0xff != 0 {
                 let to = board_serialize(moves)[0];
@@ -76,7 +76,7 @@ impl Engine {
         let kings = board_serialize(board.kings[board.turn]);
         if board.check_real != 0 {
             for i in kings {
-                let (from, moves) = self.gen_king_moves(&board, i);
+                let (from, moves) = self.gen_king_moves(&board, i, board.turn);
                 let moves_to = board_serialize(moves);
 
                 for i in 0..moves_to.len() {
@@ -93,27 +93,62 @@ impl Engine {
             }
         } else {
             for i in kings {
-                possable.push(self.gen_king_moves(&board, i));
+                possable.push(self.gen_king_moves(&board, i, board.turn));
             }
         }
 
         let knight = board_serialize(board.knights[board.turn]);
         for i in knight {
-            possable.push(self.gen_knight_moves(&board, i));
+            possable.push(self.gen_knight_moves(&board, i, board.turn));
         }
 
+        let king_pos = board_serialize(board.kings[!board.turn]);
 
+        let attackable_check_pos: u64;
+
+        if king_pos.len() > 0 {
+            attackable_check_pos = self.gen_king_attackables(king_pos[0]);
+        } else {
+            attackable_check_pos = 0;
+        }
 
         for i in 0..possable.len() {
             let (from, moves) = possable[i];
             let moves_to = board_serialize(moves);
             //board.print_board();
+
             for i in 0..moves_to.len() {
                 let to = moves_to[i];
 
                 if board.check_real == 0 || board.check_real & (1 << to) != 0 { //Not in check or to is in (check)
-                    //TODO FOR KING CHECK IF MOVE GET HIM OUT OF CHECK
-                    let new_board = board.move_piece(to, from);
+
+
+
+                    let mut new_board = board.move_piece(to, from);
+
+                    if (1 << to) & attackable_check_pos != 0 {
+                        println!("WE MADE IT!!!!!!!");
+                        let (pc, pt) = board.lookup(from);
+                        let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
+                            PieceType::Pawn => self.gen_pawn_moves(&board, to, board.turn), //en_pass??
+
+                            _ => todo!()
+                        };
+                        print_bitboard_pos(att, to);
+                        if (attackable_check_pos & att) != 0 {
+                            let (check_real, check_full) = self.gen_check_info(&new_board, to);
+                            new_board.check_real = check_real;
+                            new_board.check_full = check_full;
+                        } else {
+                            new_board.check_real = 0;
+                            new_board.check_full = 0;
+                        }
+                        //if pt attcks
+                    } else {
+                        new_board.check_real = 0;
+                        new_board.check_full = 0;
+                    }
+
                     new_board.print_board();
                     all_moves.push((from, to, new_board));
                 }
@@ -130,9 +165,9 @@ impl Engine {
         return all_moves;
     }
 
-    pub fn gen_knight_moves(&self, board: &Board, sq: usize) -> (usize, u64) {
+    pub fn gen_knight_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
 
-        let opp = match board.turn {
+        let opp = match turn {
         PieceColor::White => board.pieces[PieceColor::Black],
         PieceColor::Black => board.pieces[PieceColor::White],
         };
@@ -141,9 +176,9 @@ impl Engine {
         return (sq, attacks);
     }
     
-    pub fn gen_king_moves(&self, board: &Board, sq: usize) -> (usize, u64) {
+    pub fn gen_king_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
 
-        let opp = match board.turn {
+        let opp = match turn {
         PieceColor::White => board.pieces[PieceColor::Black],
         PieceColor::Black => board.pieces[PieceColor::White],
         };
@@ -153,11 +188,11 @@ impl Engine {
         return (sq, attacks);
     }
     
-    pub fn gen_pawn_moves(&self, board: &Board, sq: usize) -> (usize, u64) {
+    pub fn gen_pawn_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
         let mut moves = 0;
         let piece = 1 << sq;
 
-        if board.turn == PieceColor::White {
+        if turn == PieceColor::White {
             moves = moves | (postshift::nort_one(piece) & !board.occupied);
             if (piece & 0xff00) != 0 {
                 moves = moves | (postshift::nort_one(moves) & !board.occupied);
@@ -229,6 +264,70 @@ impl Engine {
 
         //print_bitboard_pos(attack, sq);
         return (sq, attack); //board_serialize(attack);
+    }
+
+    fn gen_king_attackables(&self, pos: usize) -> u64 {
+        let board = self.ray_attacks[Dir::North as usize][pos] |
+            self.ray_attacks[Dir::NOEA as usize][pos] |
+            self.ray_attacks[Dir::East as usize][pos] |
+            self.ray_attacks[Dir::SOEA as usize][pos] |
+            self.ray_attacks[Dir::South as usize][pos] |
+            self.ray_attacks[Dir::SOWE as usize][pos] |
+            self.ray_attacks[Dir::West as usize][pos] |
+            self.ray_attacks[Dir::NOWE as usize][pos] |
+            self.knight_attacks[pos];
+
+            println!("---------gen_king_attackables---------");
+        print_bitboard_pos(board, pos);
+        println!("--------------------------------------");
+
+        return board;
+    }
+
+    pub fn gen_check_info(&self, board: &Board, pos: usize) -> (u64, u64) {
+        let mut kingless = board.clone();
+        kingless.kings[board.turn] = 0;
+        kingless.recalc_board();
+
+        let (pc, pt) = board.lookup(pos);
+
+        let check_real: u64; //any piece other than the king need to occupied
+        let check_full: u64; //king can not be on
+
+        match pt {
+            PieceType::Pawn => { //TODO ACCOUNT FOR ALL!!! PIECES IN THIS MATCH
+                println!("pos: {}", pos);
+                check_real = 0;//self pos added on return //1 << pos;//self.gen_pawn_moves(&board, pos, !board.turn);
+                let (_, check_full_pre) = self.gen_pawn_moves(&board, pos, !board.turn);
+                check_full = check_full_pre & !(self.ray_attacks[Dir::North as usize][pos] | self.ray_attacks[Dir::South as usize][pos]);
+            },
+            PieceType::Knight => {
+                (_, check_real) = self.gen_knight_moves(&board, pos, !board.turn);
+                (_, check_full) = self.gen_knight_moves(&kingless, pos, !board.turn);
+            },
+            PieceType::Bishop => {
+                (_, check_real) = self.gen_bishop_moves(&board, pos, board.pieces[!board.turn]);
+                (_, check_full) = self.gen_bishop_moves(&kingless, pos, board.pieces[!board.turn]);
+            },
+            PieceType::Rook => {
+                (_, check_real) = self.gen_rook_moves(&board, pos, board.pieces[!board.turn]);
+                (_, check_full) = self.gen_rook_moves(&kingless, pos, board.pieces[!board.turn]);
+            },
+            PieceType::Queen => {
+                (_, check_real) = self.gen_queen_moves(&board, pos, board.pieces[!board.turn]);
+                (_, check_full) = self.gen_queen_moves(&kingless, pos, board.pieces[!board.turn]);
+            },
+            PieceType::King => {
+                (_, check_real) = self.gen_king_moves(&board, pos, !board.turn);
+                (_, check_full) = self.gen_king_moves(&kingless, pos, !board.turn);
+            },
+            _ => { panic!("Tried to Create Check With Empty Piece"); }
+        }
+
+        print_bitboard(check_real | (1 << pos));
+        print_bitboard(check_full);
+
+        (check_real | (1 << pos), check_full)
     }
 
     pub fn gen_ray_attacks(&self, occupied: u64, dir: Dir, square: usize) -> u64 {

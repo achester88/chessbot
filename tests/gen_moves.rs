@@ -8,7 +8,7 @@ use bitboard::{print_bitboard_pos};
 fn pawn_empty() {
     let board = Board::new("8/8/8/8/8/4P3/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_pawn_moves(&board, 20);
+    let (pos, bb) = eng.gen_pawn_moves(&board, 20, board.turn);
     print_bitboard_pos(bb, pos);
     
     assert_eq!(bb, 0x10000000);
@@ -18,7 +18,7 @@ fn pawn_empty() {
 fn pawn_start() {
     let board = Board::new("8/8/8/8/8/8/2P5/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_pawn_moves(&board, 10);
+    let (pos, bb) = eng.gen_pawn_moves(&board, 10, board.turn);
     print_bitboard_pos(bb, pos);
 
     assert_eq!(bb, 0x4040000);
@@ -38,7 +38,7 @@ fn bishop_empty() {
 fn knight_empty() {
     let board = Board::new("8/8/8/8/8/4N3/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_knight_moves(&board, 20);
+    let (pos, bb) = eng.gen_knight_moves(&board, 20, board.turn);
     print_bitboard_pos(bb, pos);
     
     assert_eq!(bb, 0x2844004428);
@@ -68,7 +68,7 @@ fn queen_empty() {
 fn king_empty() {
     let board = Board::new("8/8/8/8/8/4K3/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_king_moves(&board, 20);
+    let (pos, bb) = eng.gen_king_moves(&board, 20, board.turn);
     print_bitboard_pos(bb, pos);
     
     assert_eq!(bb, 0x38283800);
@@ -78,7 +78,7 @@ fn king_empty() {
 fn pawn_capture() {
     let board = Board::new("8/8/p1p5/1P6/8/8/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_pawn_moves(&board, 33);
+    let (pos, bb) = eng.gen_pawn_moves(&board, 33, board.turn);
     print_bitboard_pos(bb, pos);
     
     assert_eq!(bb, 0x70000000000);
@@ -88,7 +88,7 @@ fn pawn_capture() {
 fn knight_capture() {
     let board = Board::new("8/8/2p1p3/1p3p2/3N4/1p3p2/2p1p3/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_knight_moves(&board, 27);
+    let (pos, bb) = eng.gen_knight_moves(&board, 27, board.turn);
     print_bitboard_pos(bb, pos);
 
     assert_eq!(bb, 0x142200221400);
@@ -128,7 +128,7 @@ fn queen_capture() {
 fn king_capture() {
     let board = Board::new("8/8/8/2ppp3/2pKp3/2ppp3/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_king_moves(&board, 27);
+    let (pos, bb) = eng.gen_king_moves(&board, 27, board.turn);
     print_bitboard_pos(bb, pos);
 
     assert_eq!(bb, 0x1c141c0000);
@@ -138,7 +138,7 @@ fn king_capture() {
 fn pawn_block() {
     let board = Board::new("8/8/4PpP1/5P2/8/8/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_pawn_moves(&board, 37);
+    let (pos, bb) = eng.gen_pawn_moves(&board, 37, board.turn);
     print_bitboard_pos(bb, pos);
 
     assert_eq!(bb, 0x0);
@@ -178,7 +178,7 @@ fn queen_block() {
 fn king_block() {
     let board = Board::new("8/8/4PPP1/4PKP1/4PPP1/8/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_king_moves(&board, 37);
+    let (pos, bb) = eng.gen_king_moves(&board, 37, board.turn);
     print_bitboard_pos(bb, pos);
 
     assert_eq!(bb, 0x0);
@@ -188,7 +188,7 @@ fn king_block() {
 fn pawn_corner() {
     let board = Board::new("7P/8/8/8/8/8/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_pawn_moves(&board, 63);
+    let (pos, bb) = eng.gen_pawn_moves(&board, 63, board.turn);
     print_bitboard_pos(bb, pos);
 
     assert_eq!(bb, 0x0);
@@ -198,7 +198,7 @@ fn pawn_corner() {
 fn knight_corner() {
     let board = Board::new("7N/8/8/8/8/8/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_knight_moves(&board, 63);
+    let (pos, bb) = eng.gen_knight_moves(&board, 63, board.turn);
     print_bitboard_pos(bb, pos);
 
     assert_eq!(bb, 0x20400000000000);
@@ -238,7 +238,7 @@ fn queen_corner() {
 fn king_corner() {
     let board = Board::new("7K/8/8/8/8/8/8/8 w - - 0 1");
     let eng = Engine::new();
-    let (pos, bb) = eng.gen_king_moves(&board, 63);
+    let (pos, bb) = eng.gen_king_moves(&board, 63, board.turn);
     print_bitboard_pos(bb, pos);
 
     assert_eq!(bb, 0x40c0000000000000);

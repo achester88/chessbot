@@ -1,5 +1,5 @@
 use super::bitboard::{print_bitboard, print_bitboard_pos};
-use core::ops::{Index, IndexMut};
+use core::ops::{Index, IndexMut, Not};
 use crate::chessbot::engine::Move;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -44,6 +44,17 @@ impl IndexMut<PieceColor> for [u64; 2] {
     }
 }
 
+impl Not for PieceColor {
+    type Output = PieceColor; // The output type is also MyBoolean
+
+    fn not(self) -> Self::Output {
+        match self {
+            PieceColor::White => PieceColor::Black,
+            PieceColor::Black => PieceColor::White,
+        }
+    }
+}
+
 #[derive(Clone, PartialEq, Debug, Copy)]
 pub struct Board {
     pub pawns: [u64; 2],
@@ -56,7 +67,7 @@ pub struct Board {
     pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
     pub en_passant: u8, //postion of avilbe en passant
-    pub check_real: u64,
+    pub check_real: u64, //TODO USE BOOL AND CAL AS NEEDED
     pub check_full: u64,
     pub half_moves: u16,
     pub full_move: u64,
@@ -162,7 +173,7 @@ impl Board {
             fm = fen[5].parse::<u64>().unwrap();
         }
         //println!("{:?}", fen);
-        return Board {
+        let mut new_board = Board {
             pawns: [wp, bp],
             bishops: [wb, bb],
             knights: [wn, bn],
@@ -183,6 +194,10 @@ impl Board {
             occupied: wp | wb | wn | wr | wq | wk | bp | bb | bn | br | bq | bk,
             pieces: [wp | wb | wn | wr | wq | wk, bp | bb | bn | br | bq | bk],
         };
+
+        new_board.update_check();
+
+        return new_board;
     }
 
     /*fn get_pieces(&self, color: PieceColor, type_of: PieceType) -> u64 {
@@ -520,7 +535,8 @@ impl Board {
         println!();
     }
 
-    fn update_check(&mut self) { //TODO START HERE
+    fn update_check(&mut self) {
+
         self.check_real = 0;
         self.check_full = 0;
     }
