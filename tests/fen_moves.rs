@@ -1,4 +1,4 @@
-use chessbot::chessbot::bitboard::{print_bitboard, print_bitboard_pos};
+use chessbot::chessbot::bitboard::{board_serialize, print_bitboard, print_bitboard_pos};
 use chessbot::chessbot::board::{Board, PieceColor};
 use chessbot::chessbot::engine::{Engine, Move};
 
@@ -153,7 +153,7 @@ fn king_check() {
     //board.check = 0x8040201000000000;
     let eng = Engine::new();
 
-    let (check_real, check_full) = eng.gen_check_info(&board, 63);
+    let (check_real, check_full) = eng.gen_check_info(&board, 63, 0);
 
     board.check_real = check_real;
     board.check_full = check_full;
@@ -189,8 +189,6 @@ fn king_to_check() {
 
     let mut checked_board = Board::new("5k2/4P3/8/8/8/8/8/3K4 b - - 1 1");
 
-    let (check_real, check_full) = eng.gen_check_info(&board, 44);
-
     checked_board.check_real = 0x10000000000000;//check_real;
     checked_board.check_full = 0x2000000000000000;
 
@@ -219,8 +217,6 @@ fn king_to_check_next() {
     let mut fen_moves: Vec<Move> = vec![];
 
     let mut checked_board = Board::new("5k2/4P3/8/8/8/8/8/3K4 b - - 1 1");
-
-    let (check_real, check_full) = eng.gen_check_info(&board, 44);
 
     checked_board.check_real = 0x10000000000000;//check_real;
     checked_board.check_full = 0x2000000000000000;
@@ -252,5 +248,52 @@ fn king_to_check_next() {
         (60, "4k3/4P3/8/8/8/8/8/3K4 w - - 2 2"),
         (62, "6k1/4P3/8/8/8/8/8/3K4 w - - 2 2"),
     )));
+
+}
+
+#[test]
+fn shortside_castling() {
+    let board = Board::new("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
+    let eng = Engine::new();
+    let moves = eng.gen_moves(board);
+
+    let mut fen_moves: Vec<Move>;
+
+    println!("Moves: {:?}", moves);
+
+    fen_moves = fen_arr(7, vec!(
+        (5, "4k3/8/8/8/8/8/8/4KR2 b - - 1 1"),
+        (6, "4k3/8/8/8/8/8/8/4K1R1 b - - 1 1"),
+
+        (15, "4k3/8/8/8/8/8/7R/4K3 b - - 1 1"),
+        (23, "4k3/8/8/8/8/7R/8/4K3 b - - 1 1"),
+        (31, "4k3/8/8/8/7R/8/8/4K3 b - - 1 1"),
+        (39, "4k3/8/8/7R/8/8/8/4K3 b - - 1 1"),
+        (47, "4k3/8/7R/8/8/8/8/4K3 b - - 1 1"),
+        (55, "4k3/7R/8/8/8/8/8/4K3 b - - 1 1")
+    ));
+
+    let mut checked_board = Board::new("4k2R/8/8/8/8/8/8/4K3 b - - 1 1");
+
+    checked_board.check_real = 0xe000000000000000;//check_real;
+    checked_board.check_full = 0x7f80808080808080;
+
+    fen_moves.push((7, 63, checked_board));
+
+
+    fen_moves.append(&mut fen_arr(4, vec!(
+        (3, "4k3/8/8/8/8/8/8/3K3R b - - 1 1"),
+        (5, "4k3/8/8/8/8/8/8/5K1R b - - 1 1"),
+        (11, "4k3/8/8/8/8/8/3K4/7R b - - 1 1"),
+        (12, "4k3/8/8/8/8/8/4K3/7R b - - 1 1"),
+        (13, "4k3/8/8/8/8/8/5K2/7R b - - 1 1")
+    )));
+
+    fen_moves.push(fen_arr(80, vec!(
+        (80, "4k3/8/8/8/8/8/8/5RK1 b - - 1 1")
+    ))[0]);
+
+    assert_eq!(moves, fen_moves);
+
 
 }

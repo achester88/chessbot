@@ -23,6 +23,7 @@ pub struct Engine {
     pawn_attacks: Vec<Vec<u64>>,
     king_attacks: Vec<u64>,
     knight_attacks: Vec<u64>,
+    //castle_squares: Vec<Vec<u64>>,
 }
 
 impl Engine {
@@ -112,6 +113,7 @@ impl Engine {
             attackable_check_pos = 0;
         }
 
+
         for i in 0..possable.len() {
             let (from, moves) = possable[i];
             let moves_to = board_serialize(moves);
@@ -125,18 +127,22 @@ impl Engine {
 
 
                     let mut new_board = board.move_piece(to, from);
-
                     if (1 << to) & attackable_check_pos != 0 {
-                        println!("WE MADE IT!!!!!!!");
+                        //println!("CHECKING");
                         let (pc, pt) = board.lookup(from);
                         let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
                             PieceType::Pawn => self.gen_pawn_moves(&board, to, board.turn), //en_pass??
+                            PieceType::Knight => self.gen_knight_moves(&board, to, board.turn),
+                            PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[board.turn]),
+                            PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[board.turn]),
+                            PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[board.turn]),
+                            PieceType::King => (0, 0),
+                            PieceType::Empty => panic!("Empty can not check"),
 
-                            _ => todo!()
                         };
-                        print_bitboard_pos(att, to);
-                        if (attackable_check_pos & att) != 0 {
-                            let (check_real, check_full) = self.gen_check_info(&new_board, to);
+                        if (att & (1 << king_pos[0])) != 0 {
+                            let (check_real, check_full) = self.gen_check_info(&new_board, to, king_pos[0]);
+                            //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
                             new_board.check_real = check_real;
                             new_board.check_full = check_full;
                         } else {
@@ -284,14 +290,14 @@ impl Engine {
         return board;
     }
 
-    pub fn gen_check_info(&self, board: &Board, pos: usize) -> (u64, u64) {
+    pub fn gen_check_info(&self, board: &Board, pos: usize, king_pos: usize) -> (u64, u64) {
         let mut kingless = board.clone();
         kingless.kings[board.turn] = 0;
         kingless.recalc_board();
 
         let (pc, pt) = board.lookup(pos);
 
-        let check_real: u64; //any piece other than the king need to occupied
+        let mut check_real: u64; //any piece other than the king need to occupied
         let check_full: u64; //king can not be on
 
         match pt {
@@ -306,18 +312,24 @@ impl Engine {
                 (_, check_full) = self.gen_knight_moves(&kingless, pos, !board.turn);
             },
             PieceType::Bishop => {
+                let raf = self.ray_attacks[Dir::NOEA as usize][king_pos] | self.ray_attacks[Dir::NOWE as usize][king_pos] | self.ray_attacks[Dir::SOEA as usize][king_pos] | self.ray_attacks[Dir::SOWE as usize][king_pos];
                 (_, check_real) = self.gen_bishop_moves(&board, pos, board.pieces[!board.turn]);
                 (_, check_full) = self.gen_bishop_moves(&kingless, pos, board.pieces[!board.turn]);
+                check_real = check_real & raf;
             },
             PieceType::Rook => {
+                let raf = self.ray_attacks[Dir::North as usize][king_pos] | self.ray_attacks[Dir::South as usize][king_pos] | self.ray_attacks[Dir::East as usize][king_pos] | self.ray_attacks[Dir::West as usize][king_pos];
                 (_, check_real) = self.gen_rook_moves(&board, pos, board.pieces[!board.turn]);
                 (_, check_full) = self.gen_rook_moves(&kingless, pos, board.pieces[!board.turn]);
+                check_real = check_real & raf;
             },
             PieceType::Queen => {
+                let mut raf = self.ray_attacks[Dir::North as usize][king_pos] | self.ray_attacks[Dir::South as usize][king_pos] | self.ray_attacks[Dir::East as usize][king_pos] | self.ray_attacks[Dir::West as usize][king_pos] | self.ray_attacks[Dir::NOEA as usize][king_pos] | self.ray_attacks[Dir::NOWE as usize][king_pos] | self.ray_attacks[Dir::SOEA as usize][king_pos] | self.ray_attacks[Dir::SOWE as usize][king_pos];
                 (_, check_real) = self.gen_queen_moves(&board, pos, board.pieces[!board.turn]);
                 (_, check_full) = self.gen_queen_moves(&kingless, pos, board.pieces[!board.turn]);
+                check_real = check_real & raf;
             },
-            PieceType::King => {
+            PieceType::King => { //NOT NEEDED PROBABLE
                 (_, check_real) = self.gen_king_moves(&board, pos, !board.turn);
                 (_, check_full) = self.gen_king_moves(&kingless, pos, !board.turn);
             },

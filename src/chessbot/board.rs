@@ -66,6 +66,7 @@ pub struct Board {
 
     pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
+    //pub temp_castling: u8, //TODO TEMP OF IF CAST IS POSSIBLE
     pub en_passant: u8, //postion of avilbe en passant
     pub check_real: u64, //TODO USE BOOL AND CAL AS NEEDED
     pub check_full: u64,
@@ -247,52 +248,11 @@ impl Board {
     pub fn move_piece(&self, to: usize, from: usize) -> Board {
         let mut new_board = self.clone();
 
-        //-----------------------------
-        //self.print_board();
-        //print_bitboard(self.queens[PieceColor::White]);
         let (pc, pt) = self.lookup(from);
-        //println!("{:?} : {:?}", pc, pt);
-        //print_bitboard(1 << to);
         let (old_pc, old_pt) = self.lookup(to);
-        //println!("{:?} : {:?}", old_pc, old_pt);
-        //Delete old
-
-        //SET CHECK BY AND WITH PIECE ATTACKS AND KING POS
-        //STORE POS OF ATTACK IN CHECK
-        //IF CHECK AND ALREADY IN CHECK DISGUARD MOVE
-        //GEN CHECK VAL OF BOARD WITHOUT KING
 
         //Check if en_passant needs updating
-        if pt == PieceType::Pawn {
-
-            if to == new_board.en_passant as usize {
-                //remove pawn at en_pass
-                match new_board.turn {
-                    PieceColor::White => {
-                        new_board.pawns[PieceColor::Black] =
-                            new_board.pawns[PieceColor::Black] & !(1 << new_board.en_passant - 8)
-                    }
-                    PieceColor::Black => {
-                        new_board.pawns[PieceColor::White] =
-                            new_board.pawns[PieceColor::White] & !(1 << new_board.en_passant + 8)
-                    }
-                };
-            }
-
-            if (to - 16) == from && from > 7 && from < 16 {
-                //white
-                new_board.en_passant = (to as u8) - 8; //south_one
-            } else if to > 15 && (to - 16) == from && from > 47 && from < 56 {
-                //black
-                new_board.en_passant = (to as u8) + 8; //north_one
-            } else {
-                new_board.en_passant = 65;
-            }
-        } else {
-            new_board.en_passant = 65;
-        }
-        //Update in new board
-
+        new_board.en_passant_check(to, from, &pt);
 
         //CHECK FOR CHECK
         if new_board.casling != 0 && (pt == PieceType::Rook || pt == PieceType::King) {
@@ -320,38 +280,11 @@ impl Board {
         }
 
         //Remove Opps piece from to pos
-        match old_pt {
-            PieceType::Pawn => new_board.pawns[old_pc] = new_board.pawns[old_pc] & !(1 << to),
-            PieceType::Bishop => new_board.bishops[old_pc] = new_board.bishops[old_pc] & !(1 << to),
-            PieceType::Knight => new_board.knights[old_pc] = new_board.knights[old_pc] & !(1 << to),
-            PieceType::Rook => new_board.rooks[old_pc] = new_board.rooks[old_pc] & !(1 << to),
-            PieceType::Queen => new_board.queens[old_pc] = new_board.queens[old_pc] & !(1 << to),
-            PieceType::King => new_board.kings[old_pc] = new_board.kings[old_pc] & !(1 << to),
-            PieceType::Empty => (),
-        };
-
+        new_board.remove_piece(to, &old_pt, old_pc);
         //Remove from pos piece
-        match pt {
-            PieceType::Pawn => new_board.pawns[pc] = new_board.pawns[pc] & !(1 << from),
-            PieceType::Bishop => new_board.bishops[pc] = new_board.bishops[pc] & !(1 << from),
-            PieceType::Knight => new_board.knights[pc] = new_board.knights[pc] & !(1 << from),
-            PieceType::Rook => new_board.rooks[pc] = new_board.rooks[pc] & !(1 << from),
-            PieceType::Queen => new_board.queens[pc] = new_board.queens[pc] & !(1 << from),
-            PieceType::King => new_board.kings[pc] = new_board.kings[pc] & !(1 << from),
-            PieceType::Empty => (),
-        };
+        new_board.remove_piece(from, &pt, pc);
         //Add piece to to pos
-        match pt {
-            PieceType::Pawn => new_board.pawns[pc] = new_board.pawns[pc] | (1 << to),
-            PieceType::Bishop => new_board.bishops[pc] = new_board.bishops[pc] | (1 << to),
-            PieceType::Knight => new_board.knights[pc] = new_board.knights[pc] | (1 << to),
-            PieceType::Rook => new_board.rooks[pc] = new_board.rooks[pc] | (1 << to),
-            PieceType::Queen => new_board.queens[pc] = new_board.queens[pc] | (1 << to),
-            PieceType::King => new_board.kings[pc] = new_board.kings[pc] | (1 << to),
-            PieceType::Empty => (),
-        };
-
-        //-----------------------------
+        new_board.add_piece(to, &pt, pc);
 
         new_board.update_check();
 
@@ -360,6 +293,62 @@ impl Board {
         new_board.next_turn();
 
         return new_board;
+    }
+
+    fn en_passant_check(&mut self, to: usize, from: usize, pt: &PieceType) {
+
+        if pt == &PieceType::Pawn {
+            if to == self.en_passant as usize {
+                //remove pawn at en_pass
+                match self.turn {
+                    PieceColor::White => {
+                        self.pawns[PieceColor::Black] =
+                            self.pawns[PieceColor::Black] & !(1 << self.en_passant - 8)
+                    }
+                    PieceColor::Black => {
+                        self.pawns[PieceColor::White] =
+                            self.pawns[PieceColor::White] & !(1 << self.en_passant + 8)
+                    }
+                };
+            }
+
+            if (to - 16) == from && from > 7 && from < 16 {
+                //white
+                self.en_passant = (to as u8) - 8; //south_one
+            } else if to > 15 && (to - 16) == from && from > 47 && from < 56 {
+                //black
+                self.en_passant = (to as u8) + 8; //north_one
+            } else {
+                self.en_passant = 65;
+            }
+        } else {
+            self.en_passant = 65;
+        }
+    }
+
+    fn remove_piece(&mut self, pos: usize, pt: &PieceType, pc: PieceColor) {
+    //Remove Opps piece from to pos
+        match pt {
+            PieceType::Pawn => self.pawns[pc] = self.pawns[pc] & !(1 << pos),
+            PieceType::Bishop => self.bishops[pc] = self.bishops[pc] & !(1 << pos),
+            PieceType::Knight => self.knights[pc] = self.knights[pc] & !(1 << pos),
+            PieceType::Rook => self.rooks[pc] = self.rooks[pc] & !(1 << pos),
+            PieceType::Queen => self.queens[pc] = self.queens[pc] & !(1 << pos),
+            PieceType::King => self.kings[pc] = self.kings[pc] & !(1 << pos),
+            PieceType::Empty => (),
+        };
+    }
+
+    fn add_piece(&mut self, pos: usize, pt: &PieceType, pc: PieceColor) {
+        match pt {
+            PieceType::Pawn => self.pawns[pc] = self.pawns[pc] | (1 << pos),
+            PieceType::Bishop => self.bishops[pc] = self.bishops[pc] | (1 << pos),
+            PieceType::Knight => self.knights[pc] = self.knights[pc] | (1 << pos),
+            PieceType::Rook => self.rooks[pc] = self.rooks[pc] | (1 << pos),
+            PieceType::Queen => self.queens[pc] = self.queens[pc] | (1 << pos),
+            PieceType::King => self.kings[pc] = self.kings[pc] | (1 << pos),
+            PieceType::Empty => (),
+        };
     }
 
     pub fn recalc_board(&mut self) {
@@ -388,26 +377,10 @@ impl Board {
 
         new_board.next_turn();
         //Remove old pawn
-        match pt {
-            PieceType::Pawn => new_board.pawns[pc] = new_board.pawns[pc] & !(1 << from),
-            PieceType::Bishop => new_board.bishops[pc] = new_board.bishops[pc] & !(1 << from),
-            PieceType::Knight => new_board.knights[pc] = new_board.knights[pc] & !(1 << from),
-            PieceType::Rook => new_board.rooks[pc] = new_board.rooks[pc] & !(1 << from),
-            PieceType::Queen => new_board.queens[pc] = new_board.queens[pc] & !(1 << from),
-            PieceType::King => new_board.kings[pc] = new_board.kings[pc] & !(1 << from),
-            PieceType::Empty => (),
-        };
-
-        //Remove Opps Piece
-        match old_pt {
-            PieceType::Pawn => new_board.pawns[old_pc] = new_board.pawns[old_pc] & !(1 << to),
-            PieceType::Bishop => new_board.bishops[old_pc] = new_board.bishops[old_pc] & !(1 << to),
-            PieceType::Knight => new_board.knights[old_pc] = new_board.knights[old_pc] & !(1 << to),
-            PieceType::Rook => new_board.rooks[old_pc] = new_board.rooks[old_pc] & !(1 << to),
-            PieceType::Queen => new_board.queens[old_pc] = new_board.queens[old_pc] & !(1 << to),
-            PieceType::King => new_board.kings[old_pc] = new_board.kings[old_pc] & !(1 << to),
-            PieceType::Empty => (),
-        };
+        new_board.remove_piece(to, &old_pt, old_pc);
+        //Remove from pos piece
+        new_board.remove_piece(from, &pt, pc);
+        //Add piece to to pos
 
         let mut new_boards = vec!(new_board.clone(); 4);
 
@@ -421,22 +394,7 @@ impl Board {
 
         //In case other piece is removed all case need to be run
         for i in 0..4 {
-            let white_pieces = new_boards[i].pawns[PieceColor::White]
-                | new_boards[i].bishops[PieceColor::White]
-                | new_boards[i].knights[PieceColor::White]
-                | new_boards[i].rooks[PieceColor::White]
-                | new_boards[i].queens[PieceColor::White]
-                | new_boards[i].kings[PieceColor::White];
-            let black_pieces = new_board.pawns[PieceColor::Black]
-                | new_boards[i].bishops[PieceColor::Black]
-                | new_boards[i].knights[PieceColor::Black]
-                | new_boards[i].rooks[PieceColor::Black]
-                | new_boards[i].queens[PieceColor::Black]
-                | new_boards[i].kings[PieceColor::Black];
-
-            new_boards[i].occupied = white_pieces | black_pieces;
-            new_boards[i].pieces = [white_pieces, black_pieces];
-
+            new_boards[i].recalc_board();
             out.push((from, to, new_boards[i]));
         }
 
