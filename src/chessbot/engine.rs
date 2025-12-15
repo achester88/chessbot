@@ -103,6 +103,39 @@ impl Engine {
             possable.push(self.gen_knight_moves(&board, i, board.turn));
         }
 
+        /*
+
+                    'q' => 1 << 0,
+                    'k' => 1 << 1,
+                    'Q' => 1 << 2,
+                    'K' => 1 << 3,
+
+         */
+
+        if (board.casling & 0b0000_1111) != 0 {
+            match board.turn {
+                PieceColor::White => {
+                    if board.casling & 0b0100 != 0 { //queenside
+                        //let to = board_serialize(moves)[0];
+                        //let new_board = board.promote(from, to);
+                        all_moves.push(board.castle(88));
+                    }
+                    if board.casling & 0b1000 != 0 { //kingside O-O 80
+                        //80
+                        all_moves.push(board.castle(80));
+                    }
+                },
+                PieceColor::Black => {
+                    if board.casling & 0b0001 != 0 { //queenside
+                        all_moves.push(board.castle(88));
+                    }
+                    if board.casling & 0b0010 != 0 { //kingside
+                        all_moves.push(board.castle(80));
+                    }
+                }
+            }
+        }
+
         let king_pos = board_serialize(board.kings[!board.turn]);
 
         let attackable_check_pos: u64;

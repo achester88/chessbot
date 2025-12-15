@@ -66,7 +66,7 @@ pub struct Board {
 
     pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
-    //pub temp_castling: u8, //TODO TEMP OF IF CAST IS POSSIBLE
+    pub temp_castling: u8, //TODO TEMP OF IF CAST IS POSSIBLE (USE CASTLING OTHER 4 BITS)
     pub en_passant: u8, //postion of avilbe en passant
     pub check_real: u64, //TODO USE BOOL AND CAL AS NEEDED
     pub check_full: u64,
@@ -187,6 +187,7 @@ impl Board {
                 PieceColor::Black
             },
             casling: casling,
+            temp_castling: 0, //TODO CHECK IF ANY SPACES ARE BLOCKED/CAN'T ATTACK
             check_real: 0, //TODO CHECK IF ANY KING IS IN CHECK AND BY WHO
             check_full: 0,
             en_passant: ep,
@@ -263,17 +264,18 @@ impl Board {
 
             if pt == PieceType::King {
                 new_board.casling &= values
-            }
+            } else {
 
-            //if rook cencel side its on
-            //check if from mathces
-            match from {
-                0 => new_board.casling &= 0b1011, //white queenside
-                7 => new_board.casling &= 0b0111, //white kingside
-                56 => new_board.casling &= 0b1011, //black queenside
-                63 => new_board.casling &= 0b0111, //black kingside
-                _ => {}
-            };
+                //if rook cencel side its on
+                //check if from mathces
+                match from {
+                    0 => new_board.casling &= 0b1011, //white queenside
+                    7 => new_board.casling &= 0b0111, //white kingside
+                    56 => new_board.casling &= 0b1011, //black queenside
+                    63 => new_board.casling &= 0b0111, //black kingside
+                    _ => {}
+                };
+            }
 
             //qk
             //white = 11
@@ -399,6 +401,67 @@ impl Board {
         }
 
         return out;
+    }
+
+    pub fn castle(&self, code: u8) -> Move {
+        let mut new_board = self.clone();
+
+        let king_from_pos: usize;
+        let rook_from_pos: usize;
+
+        let king_to_pos: usize;
+        let rook_to_pos: usize;
+
+        match new_board.turn {
+            PieceColor::White => {
+                king_from_pos = 4;
+                if code == 80 {
+                    rook_from_pos = 7;
+
+                    rook_to_pos = 5;
+                    king_to_pos = 6;
+                } else {
+                    rook_from_pos = 0;
+
+                    rook_to_pos = 3;
+                    king_to_pos = 2;
+                }
+
+                new_board.casling &= 0b0011;
+            },
+            PieceColor::Black => {
+                king_from_pos = 60;
+                if code == 80 {
+                    rook_from_pos = 56;
+
+                    rook_to_pos = 61;
+                    king_to_pos = 62;
+                } else {
+                    rook_from_pos = 63;
+
+                    rook_to_pos = 59;
+                    king_to_pos = 58;
+                }
+
+                new_board.casling &= 0b1100;
+            }
+        }
+
+        new_board.temp_castling &= new_board.casling;
+
+        new_board.remove_piece(king_from_pos, &PieceType::King, new_board.turn);
+        new_board.remove_piece(rook_from_pos, &PieceType::Rook, new_board.turn);
+
+        new_board.add_piece(king_to_pos, &PieceType::King, new_board.turn);
+        new_board.add_piece(rook_to_pos, &PieceType::Rook, new_board.turn);
+
+        new_board.update_check();
+
+        new_board.recalc_board();
+
+        new_board.next_turn();
+
+        return (code as usize, code as usize, new_board);
     }
 
     fn next_turn(&mut self)  {

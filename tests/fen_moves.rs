@@ -252,7 +252,7 @@ fn king_to_check_next() {
 }
 
 #[test]
-fn shortside_castling() {
+fn queenside_castling() {
     let board = Board::new("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
     let eng = Engine::new();
     let moves = eng.gen_moves(board);
@@ -261,7 +261,11 @@ fn shortside_castling() {
 
     println!("Moves: {:?}", moves);
 
-    fen_moves = fen_arr(7, vec!(
+    fen_moves = (fen_arr(80, vec!(
+        (80, "4k3/8/8/8/8/8/8/5RK1 b - - 1 1")
+    )));
+
+    fen_moves.append(&mut fen_arr(7, vec!(
         (5, "4k3/8/8/8/8/8/8/4KR2 b - - 1 1"),
         (6, "4k3/8/8/8/8/8/8/4K1R1 b - - 1 1"),
 
@@ -271,7 +275,7 @@ fn shortside_castling() {
         (39, "4k3/8/8/7R/8/8/8/4K3 b - - 1 1"),
         (47, "4k3/8/7R/8/8/8/8/4K3 b - - 1 1"),
         (55, "4k3/7R/8/8/8/8/8/4K3 b - - 1 1")
-    ));
+    )));
 
     let mut checked_board = Board::new("4k2R/8/8/8/8/8/8/4K3 b - - 1 1");
 
@@ -288,10 +292,6 @@ fn shortside_castling() {
         (12, "4k3/8/8/8/8/8/4K3/7R b - - 1 1"),
         (13, "4k3/8/8/8/8/8/5K2/7R b - - 1 1")
     )));
-
-    fen_moves.push(fen_arr(80, vec!(
-        (80, "4k3/8/8/8/8/8/8/5RK1 b - - 1 1")
-    ))[0]);
 
     assert_eq!(moves, fen_moves);
 
