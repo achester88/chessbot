@@ -103,15 +103,6 @@ impl Engine {
             possable.push(self.gen_knight_moves(&board, i, board.turn));
         }
 
-        /*
-
-                    'q' => 1 << 0,
-                    'k' => 1 << 1,
-                    'Q' => 1 << 2,
-                    'K' => 1 << 3,
-
-         */
-
         if (board.casling & 0b0000_1111) != 0 {
             match board.turn {
                 PieceColor::White => {
@@ -187,6 +178,35 @@ impl Engine {
                         new_board.check_real = 0;
                         new_board.check_full = 0;
                     }
+
+                    /*
+                    if new_board.casling & 0b1111 != 0 {
+                        for i in 0..self.castle_squares[new_board.turn].len() {
+                            let sides  = self.castle_squares[new_board.turn][i]; //val
+                            for ii in sides.len() {
+                                let (board, sq) = sides[ii]; //(board: u64, sq: usize)
+
+                                if (1 << to) & board != 0 {
+                                    let (pc, pt) = board.lookup(from);
+                                    let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
+                                        PieceType::Pawn => self.gen_pawn_moves(&board, to, board.turn), //en_pass??
+                                        PieceType::Knight => self.gen_knight_moves(&board, to, board.turn),
+                                        PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[board.turn]),
+                                        PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[board.turn]),
+                                        PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[board.turn]),
+                                        PieceType::King => (0, 0),
+                                        PieceType::Empty => panic!("Empty can not check"),
+
+                                    };
+                                    if att
+                                }
+                            }
+                        }
+                        if new_board.casling & 0b0100 != 0 {
+
+                        }
+                    }
+                    */
 
                     new_board.print_board();
                     all_moves.push((from, to, new_board));

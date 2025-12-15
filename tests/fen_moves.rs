@@ -252,7 +252,7 @@ fn king_to_check_next() {
 }
 
 #[test]
-fn queenside_castling() {
+fn king_castling() {
     let board = Board::new("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
     let eng = Engine::new();
     let moves = eng.gen_moves(board);
@@ -291,6 +291,39 @@ fn queenside_castling() {
         (11, "4k3/8/8/8/8/8/3K4/7R b - - 1 1"),
         (12, "4k3/8/8/8/8/8/4K3/7R b - - 1 1"),
         (13, "4k3/8/8/8/8/8/5K2/7R b - - 1 1")
+    )));
+
+    assert_eq!(moves, fen_moves);
+
+
+}
+
+#[test]
+fn queenside_blocked_castling() {
+    let board = Board::new("r3k3/8/P7/8/8/8/8/4K3 w q - 0 1");
+    let eng = Engine::new();
+    let (_, _,start) = eng.gen_moves(board)[0];
+
+    let mut fen_moves: Vec<Move>;
+
+    println!("Moves: {:?}", start);
+
+    let moves = eng.gen_moves(start);
+
+    fen_moves = fen_arr(56, vec!(
+        (48, "4k3/r7/8/8/8/8/8/4K3 w - - 2 2"),
+
+        (57, "1r2k3/P7/8/8/8/8/8/4K3 w - - 2 2"),
+        (58, "2r1k3/P7/8/8/8/8/8/4K3 w - - 2 2"),
+        (59, "3rk3/P7/8/8/8/8/8/4K3 w - - 2 2"),
+    ));
+
+    fen_moves.append(&mut fen_arr(60, vec!(
+        (51, "r7/P2k4/8/8/8/8/8/4K3 w - - 0 1"),
+        (52, "r7/P3k3/8/8/8/8/8/4K3 w - - 0 1"),
+        (53, "r7/P4k2/8/8/8/8/8/4K3 w - - 0 1"),
+        (59, "r2k4/P7/8/8/8/8/8/4K3 w - - 0 1"),
+        (61, "r4k2/P7/8/8/8/8/8/4K3 w - - 0 1")
     )));
 
     assert_eq!(moves, fen_moves);
