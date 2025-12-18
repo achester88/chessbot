@@ -66,7 +66,7 @@ pub struct Board {
 
     pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
-    pub temp_castling: u8, //TODO TEMP OF IF CAST IS POSSIBLE (USE CASTLING OTHER 4 BITS)
+    pub casling_attacks: u64,
     pub en_passant: u8, //postion of avilbe en passant
     pub check_real: u64, //TODO USE BOOL AND CAL AS NEEDED
     pub check_full: u64,
@@ -147,10 +147,10 @@ impl Board {
             let cal: Vec<char> = fen[2].chars().collect();
             for c in cal {
                 casling |= match c {
-                    'q' => 1 << 0,
-                    'k' => 1 << 1,
-                    'Q' => 1 << 2,
-                    'K' => 1 << 3,
+                    'Q' => 1 << 3,
+                    'K' => 1 << 2,
+                    'q' => 1 << 1,
+                    'k' => 1 << 0,
                     _ => 0,
                 }
             }
@@ -186,8 +186,8 @@ impl Board {
             } else {
                 PieceColor::Black
             },
-            casling: casling,
-            temp_castling: 0, //TODO CHECK IF ANY SPACES ARE BLOCKED/CAN'T ATTACK
+            casling: 0b1111_0000 | casling,
+            casling_attacks: 0,//TODO CHECK IF FEN STRING HAS ANY ATTACKS
             check_real: 0, //TODO CHECK IF ANY KING IS IN CHECK AND BY WHO
             check_full: 0,
             en_passant: ep,
@@ -257,22 +257,23 @@ impl Board {
 
         //CHECK FOR CHECK
         if new_board.casling != 0 && (pt == PieceType::Rook || pt == PieceType::King) {
-            let values = match pc {
-                PieceColor::White => 0b0011,
-                PieceColor::Black => 0b1100,
-            };
 
             if pt == PieceType::King {
-                new_board.casling &= values
+                let values = match pc {
+                    PieceColor::White => 0b0011,
+                    PieceColor::Black => 0b1100,
+                };
+
+                new_board.casling &= values;
             } else {
 
                 //if rook cencel side its on
                 //check if from mathces
                 match from {
-                    0 => new_board.casling &= 0b1011, //white queenside
-                    7 => new_board.casling &= 0b0111, //white kingside
-                    56 => new_board.casling &= 0b1011, //black queenside
-                    63 => new_board.casling &= 0b0111, //black kingside
+                    0 => new_board.casling &= 0b1011, //white kingside
+                    7 => new_board.casling &= 0b0111, //white queenside
+                    56 => new_board.casling &= 0b1110, //black kingside
+                    63 => new_board.casling &= 0b1101, //black queenside
                     _ => {}
                 };
             }
@@ -447,8 +448,6 @@ impl Board {
             }
         }
 
-        new_board.temp_castling &= new_board.casling;
-
         new_board.remove_piece(king_from_pos, &PieceType::King, new_board.turn);
         new_board.remove_piece(rook_from_pos, &PieceType::Rook, new_board.turn);
 
@@ -529,22 +528,45 @@ impl Board {
         println!("-----");
         println!(
             "Castling Rights: {}{} {}{}",
-            if ((self.casling >> 0) & 1) == 1 {
+            if self.casling & 0b1000 != 0 {
                 "Q"
             } else {
                 "-"
             },
-            if ((self.casling >> 1) & 1) == 1 {
+            if self.casling & 0b0100 != 0 {
                 "K"
             } else {
                 "-"
             },
-            if ((self.casling >> 2) & 1) == 1 {
+            if self.casling & 0b0010 != 0 {
                 "q"
             } else {
                 "-"
             },
-            if ((self.casling >> 3) & 1) == 1 {
+            if self.casling & 0b0001 != 0 {
+                "k"
+            } else {
+                "-"
+            }
+        );
+        println!(
+            "Temp Castling Rights: {}{} {}{}",
+            if self.casling & 0b1000_0000 != 0 {
+                "Q"
+            } else {
+                "-"
+            },
+            if self.casling & 0b0100_0000 != 0 {
+                "K"
+            } else {
+                "-"
+            },
+            if self.casling & 0b0010_0000 != 0 {
+                "q"
+            } else {
+                "-"
+            },
+            if self.casling & 0b0001_0000 != 0 {
                 "k"
             } else {
                 "-"

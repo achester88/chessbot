@@ -103,24 +103,28 @@ impl Engine {
             possable.push(self.gen_knight_moves(&board, i, board.turn));
         }
 
-        if (board.casling & 0b0000_1111) != 0 {
+        let can_castle = board.casling & 0b0000_1111 != 0;
+        let not_check = board.check_real == 0;
+
+        if can_castle {
             match board.turn {
                 PieceColor::White => {
-                    if board.casling & 0b0100 != 0 { //queenside
+                    if board.casling & 0b1000_1000 == 0b1000_1000 {//board.casling & 0b0100 != 0 && board.casling & 0b0100_0000 != 0 { //queenside
                         //let to = board_serialize(moves)[0];
                         //let new_board = board.promote(from, to);
                         all_moves.push(board.castle(88));
                     }
-                    if board.casling & 0b1000 != 0 { //kingside O-O 80
+                    if board.casling & 0b0100_0100 == 0b0100_0100 { //kingside O-O 80
                         //80
                         all_moves.push(board.castle(80));
                     }
                 },
                 PieceColor::Black => {
-                    if board.casling & 0b0001 != 0 { //queenside
+                    println!("#################### {} {}", board.casling, board.casling & 0b0010_0010);
+                    if board.casling & 0b0010_0010 == 0b0010_0010 { //queenside
                         all_moves.push(board.castle(88));
                     }
-                    if board.casling & 0b0010 != 0 { //kingside
+                    if board.casling & 0b0001_0001 == 0b0001_0001 { //kingside
                         all_moves.push(board.castle(80));
                     }
                 }
@@ -146,9 +150,9 @@ impl Engine {
             for i in 0..moves_to.len() {
                 let to = moves_to[i];
 
-                if board.check_real == 0 || board.check_real & (1 << to) != 0 { //Not in check or to is in (check)
+                if not_check || board.check_real & (1 << to) != 0 { //Not in check or to is in (check)
 
-
+                    //can_castle
 
                     let mut new_board = board.move_piece(to, from);
                     if (1 << to) & attackable_check_pos != 0 {
@@ -179,7 +183,52 @@ impl Engine {
                         new_board.check_full = 0;
                     }
 
-                    /*
+                    if can_castle {
+
+                        let (pc, pt) = board.lookup(from);
+                        let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
+                            PieceType::Pawn => (0, self.pawn_attacks[board.turn as usize][to]),//self.gen_pawn_moves(&board, to, board.turn), //en_pass??
+                            PieceType::Knight => self.gen_knight_moves(&board, to, board.turn),
+                            PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[board.turn]),
+                            PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[board.turn]),
+                            PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[board.turn]),
+                            PieceType::King => self.gen_king_moves(&board, to, board.turn),
+                            PieceType::Empty => panic!("Empty can not check"),
+                        };
+
+                        let hit_rank = match board.turn {
+                            PieceColor::White => att & 0x7600000000000000 != 0 && board.casling & 0b0011 != 0,
+                            PieceColor::Black => att & 0x76 != 0 && board.casling & 0b1100 != 0,
+                        };
+
+                        println!("#####################");
+                        println!("{} || {} :: {}", board.casling, hit_rank, board.casling & 0b0011 != 0);
+                        println!("#####################");
+
+                        if hit_rank {
+                            println!("Castle for !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+                            //Find Square
+                            if att & 0x600000000000000 != 0 {//White King Side
+                                new_board.casling &= 0b1110_1111;
+                            }
+                            if att & 0x7000000000000000 != 0 {//White Queen Side
+                                new_board.casling &= 0b1101_1111;
+                            }
+
+                            if att & 0x6 != 0 {//Black King Side
+                                new_board.casling &= 0b1011_1111;
+                            }
+                            if att & 0x70 != 0 {//Black Queen Side
+                                new_board.casling &= 0b0111_1111;
+                            }
+                        }
+
+                        new_board.casling_attacks |= (1 << to);
+
+                    }
+
+                        /*
                     if new_board.casling & 0b1111 != 0 {
                         for i in 0..self.castle_squares[new_board.turn].len() {
                             let sides  = self.castle_squares[new_board.turn][i]; //val
