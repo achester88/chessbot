@@ -168,16 +168,16 @@ impl Engine {
                         new_board.casling_attacks[2] &= !change;
                         new_board.casling_attacks[3] &= !change;
 
-                        if new_board.casling_attacks[0] == 0 {
+                        if new_board.casling_attacks[0] == 0 && (new_board.casling & 0b0001) != 0 {
                             new_board.casling |= 0b0001_0000;
                         }
-                        if new_board.casling_attacks[1] == 0 {
+                        if new_board.casling_attacks[1] == 0 && (new_board.casling & 0b0010) != 0 {
                             new_board.casling |= 0b0010_0000;
                         }
-                        if new_board.casling_attacks[2] == 0 {
+                        if new_board.casling_attacks[2] == 0 && (new_board.casling & 0b0100) != 0 {
                             new_board.casling |= 0b0100_0000;
                         }
-                        if new_board.casling_attacks[3] == 0 {
+                        if new_board.casling_attacks[3] == 0 && (new_board.casling & 0b1000) != 0 {
                             new_board.casling |= 0b1000_0000;
                         }
                         //Will be reacalcuated if hits again
