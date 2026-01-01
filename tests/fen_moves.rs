@@ -6,9 +6,9 @@ mod common;
 use common::{fen_arr};
 //FEN string should be -1 fore moves i.e.
 #[test]
-fn pawn_base() {
-    let board = Board::new("8/8/8/8/8/3p4/2P5/8 w - - 0 1");
+fn pawn_base() { 
     let eng = Engine::new();
+    let board = Board::new("8/8/8/8/8/3p4/2P5/8 w - - 0 1", &eng);
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
@@ -21,8 +21,8 @@ fn pawn_base() {
 
 #[test]
 fn knight_base() {
-    let board = Board::new("8/8/2p2n2/8/2pNp3/1r6/4p3/8 w - - 0 1");
     let eng = Engine::new();
+    let board = Board::new("8/8/2p2n2/8/2pNp3/1r6/4p3/8 w - - 0 1", &eng);
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
@@ -40,8 +40,8 @@ fn knight_base() {
 
 #[test]
 fn queen_base() {
-    let board = Board::new("8/1K6/6p1/8/1p2Q3/4p3/8/8 w - - 0 1");
     let eng = Engine::new();
+    let board = Board::new("8/1K6/6p1/8/1p2Q3/4p3/8/8 w - - 0 1", &eng);
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
@@ -89,8 +89,8 @@ fn queen_base() {
 //en_passant
 #[test]
 fn pawn_en_passant() {
-    let board = Board::new("8/8/8/3Pp3/8/8/8/8 w - e6 0 1");
     let eng = Engine::new();
+    let board = Board::new("8/8/8/3Pp3/8/8/8/8 w - e6 0 1", &eng);
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
@@ -102,8 +102,8 @@ fn pawn_en_passant() {
 
 #[test]
 fn pawn_promote() {
-    let board = Board::new("8/1P6/8/8/8/8/8/8 w - - 0 1");
     let eng = Engine::new();
+    let board = Board::new("8/1P6/8/8/8/8/8/8 w - - 0 1", &eng);
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
@@ -117,8 +117,8 @@ fn pawn_promote() {
 
 #[test]
 fn pawn_promote_black() {
-    let board = Board::new("8/8/8/8/8/8/1p6/8 b - - 1 1");
     let eng = Engine::new();
+    let board = Board::new("8/8/8/8/8/8/1p6/8 b - - 1 1", &eng);
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
@@ -132,8 +132,8 @@ fn pawn_promote_black() {
 
 #[test]
 fn pawn_capture_promote() {
-    let board = Board::new("1p6/2P5/8/8/8/8/8/8 w - - 0 1");
     let eng = Engine::new();
+    let board = Board::new("1p6/2P5/8/8/8/8/8/8 w - - 0 1", &eng);
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
@@ -149,9 +149,9 @@ fn pawn_capture_promote() {
 
 #[test]
 fn king_check() {
-    let mut board = Board::new("7b/8/8/4K3/7B/8/8/8 w - - 0 1");
-    //board.check = 0x8040201000000000;
     let eng = Engine::new();
+    let mut board = Board::new("7b/8/8/4K3/7B/8/8/8 w - - 0 1", &eng);
+    //board.check = 0x8040201000000000;
 
     let (check_real, check_full) = eng.gen_check_info(&board, 63, 0);
 
@@ -179,15 +179,15 @@ fn king_check() {
 
 #[test]
 fn king_to_check() {
-    let mut board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1");
     let eng = Engine::new();
+    let mut board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1", &eng);
 
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
     let mut fen_moves: Vec<Move> = vec![];
 
-    let mut checked_board = Board::new("5k2/4P3/8/8/8/8/8/3K4 b - - 1 1");
+    let mut checked_board = Board::new("5k2/4P3/8/8/8/8/8/3K4 b - - 1 1", &eng);
 
     checked_board.check_real = 0x10000000000000;//check_real;
     checked_board.check_full = 0x2000000000000000;
@@ -208,15 +208,15 @@ fn king_to_check() {
 
 #[test]
 fn king_to_check_next() {
-    let mut board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1");
     let eng = Engine::new();
+    let mut board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1", &eng);
 
     let moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
     let mut fen_moves: Vec<Move> = vec![];
 
-    let mut checked_board = Board::new("5k2/4P3/8/8/8/8/8/3K4 b - - 1 1");
+    let mut checked_board = Board::new("5k2/4P3/8/8/8/8/8/3K4 b - - 1 1", &eng);
 
     checked_board.check_real = 0x10000000000000;//check_real;
     checked_board.check_full = 0x2000000000000000;
@@ -253,8 +253,8 @@ fn king_to_check_next() {
 
 #[test]
 fn king_castling() {
-    let board = Board::new("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
     let eng = Engine::new();
+    let board = Board::new("4k3/8/8/8/8/8/8/4K2R w K - 0 1", &eng);
     let moves = eng.gen_moves(board);
 
     let mut fen_moves: Vec<Move>;
@@ -277,7 +277,7 @@ fn king_castling() {
         (55, "4k3/7R/8/8/8/8/8/4K3 b - - 1 1")
     )));
 
-    let mut checked_board = Board::new("4k2R/8/8/8/8/8/8/4K3 b - - 1 1");
+    let mut checked_board = Board::new("4k2R/8/8/8/8/8/8/4K3 b - - 1 1", &eng);
 
     checked_board.check_real = 0xe000000000000000;//check_real;
     checked_board.check_full = 0x7f80808080808080;
@@ -300,8 +300,8 @@ fn king_castling() {
 
 #[test]
 fn queenside_blocked_castling() {
-    let board = Board::new("r3k3/8/P7/8/8/8/8/4K3 w k - 0 1");
     let eng = Engine::new();
+    let board = Board::new("r3k3/8/P7/8/8/8/8/4K3 w q - 0 1", &eng);
     let (_, _,start) = eng.gen_moves(board)[0];
 
     let mut fen_moves: Vec<Move>;

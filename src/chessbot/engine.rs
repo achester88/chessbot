@@ -88,7 +88,12 @@ impl Engine {
                     print_bitboard((1 << to) & board.check_full);
                     println!("---------------------");
                     if (1 << to) & board.check_full == 0 {
-                        all_moves.push((from, to, board.move_piece(to, from)));
+                        let mut new_board = board.move_piece(to, from); //TODO REPLACE WITH FULL
+                                                                        //CHECK (REVILED CHECK)
+                        new_board.check_real = 0;
+                        new_board.check_full = 0;
+                        all_moves.push((from, to, new_board));
+
                     }
                 }
             }
@@ -132,7 +137,6 @@ impl Engine {
         }
 
         let king_pos = board_serialize(board.kings[!board.turn]);
-
         let attackable_check_pos: u64;
 
         if king_pos.len() > 0 {
@@ -141,22 +145,34 @@ impl Engine {
             attackable_check_pos = 0;
         }
 
+        let all_caslt_spots = board.casling_attacks[0] | board.casling_attacks[1] | board.casling_attacks[2] | board.casling_attacks[3];
+
 
         for i in 0..possable.len() {
             let (from, moves) = possable[i];
             let moves_to = board_serialize(moves);
-            //board.print_board();
+            board.print_board();
 
             for i in 0..moves_to.len() {
                 let to = moves_to[i];
 
                 if not_check || board.check_real & (1 << to) != 0 { //Not in check or to is in (check)
-
                     //can_castle
 
                     let mut new_board = board.move_piece(to, from);
+                    
+                    let change = (1 << to) | (1 << from);
+
+                    if change & all_caslt_spots != 0 {
+                        new_board.casling_attacks[0] &= !change;
+                        new_board.casling_attacks[1] &= !change;
+                        new_board.casling_attacks[2] &= !change;
+                        new_board.casling_attacks[3] &= !change;
+                        //Will be reacalcuated if hits again
+                    }
+
+
                     if (1 << to) & attackable_check_pos != 0 {
-                        //println!("CHECKING");
                         let (pc, pt) = board.lookup(from);
                         let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
                             PieceType::Pawn => self.gen_pawn_moves(&board, to, board.turn), //en_pass??
@@ -178,10 +194,12 @@ impl Engine {
                             new_board.check_full = 0;
                         }
                         //if pt attcks
+                    
                     } else {
                         new_board.check_real = 0;
                         new_board.check_full = 0;
                     }
+
 
                     if can_castle {
 
@@ -209,53 +227,27 @@ impl Engine {
                             println!("Castle for !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
                             //Find Square
-                            if att & 0x600000000000000 != 0 {//White King Side
+                            if att & 0x7000000000000000 != 0 && new_board.casling & 0b0001 != 0 {//Black King Side
                                 new_board.casling &= 0b1110_1111;
+                                new_board.casling_attacks[0] |= (1 << to);
                             }
-                            if att & 0x7000000000000000 != 0 {//White Queen Side
+                            if att & 0x600000000000000 != 0 && new_board.casling & 0b0010 != 0 {//Black Queen Side
                                 new_board.casling &= 0b1101_1111;
+                                new_board.casling_attacks[1] |= (1 << to);
                             }
 
-                            if att & 0x6 != 0 {//Black King Side
+                            if att & 0x70 != 0 && new_board.casling & 0b0100 != 0 {//White King Side
                                 new_board.casling &= 0b1011_1111;
+                                new_board.casling_attacks[2] |= (1 << to);
                             }
-                            if att & 0x70 != 0 {//Black Queen Side
+                            if att & 0x6 != 0 && new_board.casling & 0b1000 != 0{//White Queen Side
                                 new_board.casling &= 0b0111_1111;
+                                new_board.casling_attacks[3] |= (1 << to);
                             }
-                        }
+                        } //TODO UNDO CASLING ATTCKS LIST
 
-                        new_board.casling_attacks |= (1 << to);
 
                     }
-
-                        /*
-                    if new_board.casling & 0b1111 != 0 {
-                        for i in 0..self.castle_squares[new_board.turn].len() {
-                            let sides  = self.castle_squares[new_board.turn][i]; //val
-                            for ii in sides.len() {
-                                let (board, sq) = sides[ii]; //(board: u64, sq: usize)
-
-                                if (1 << to) & board != 0 {
-                                    let (pc, pt) = board.lookup(from);
-                                    let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
-                                        PieceType::Pawn => self.gen_pawn_moves(&board, to, board.turn), //en_pass??
-                                        PieceType::Knight => self.gen_knight_moves(&board, to, board.turn),
-                                        PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[board.turn]),
-                                        PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[board.turn]),
-                                        PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[board.turn]),
-                                        PieceType::King => (0, 0),
-                                        PieceType::Empty => panic!("Empty can not check"),
-
-                                    };
-                                    if att
-                                }
-                            }
-                        }
-                        if new_board.casling & 0b0100 != 0 {
-
-                        }
-                    }
-                    */
 
                     new_board.print_board();
                     all_moves.push((from, to, new_board));
@@ -271,6 +263,44 @@ impl Engine {
         println!("---------- END {} -----------", board.half_moves);
 
         return all_moves;
+    }
+    //Takes in board, determs if check and if so info, and if any castleing valadation
+    pub fn calulate_board_info(&self, board: &Board) {
+        let mut possable: Vec<(usize, u64)> = vec![];
+
+        let pawns = board_serialize(board.pawns[!board.turn]);
+        for i in pawns {
+            possable.push(self.gen_pawn_moves(&board, i, !board.turn));
+        }
+
+        let knights = board_serialize(board.knights[!board.turn]);
+        for i in knights {
+            possable.push(self.gen_knight_moves(&board, i, !board.turn));
+        }
+
+        let bishops = board_serialize(board.bishops[!board.turn]);
+        for i in bishops {
+            possable.push(self.gen_bishop_moves(&board, i, board.pieces[!board.turn]));
+        }
+        
+        let rooks = board_serialize(board.rooks[!board.turn]);
+        for i in rooks {
+            possable.push(self.gen_rook_moves(&board, i, board.pieces[!board.turn]));
+        }
+
+        let queens = board_serialize(board.queens[!board.turn]);
+        for i in queens {
+            possable.push(self.gen_queen_moves(&board, i, board.pieces[!board.turn]));
+        }
+        
+        let kings = board_serialize(board.kings[!board.turn]);
+        for i in kings {
+            possable.push(self.gen_king_moves(&board, i, !board.turn));
+        }
+
+        for i in 0..possable.len() {
+
+        }
     }
 
     pub fn gen_knight_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
@@ -438,6 +468,7 @@ impl Engine {
             _ => { panic!("Tried to Create Check With Empty Piece"); }
         }
 
+        println!("CHECK INFO");
         print_bitboard(check_real | (1 << pos));
         print_bitboard(check_full);
 

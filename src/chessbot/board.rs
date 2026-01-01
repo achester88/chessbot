@@ -1,6 +1,7 @@
 use super::bitboard::{print_bitboard, print_bitboard_pos};
 use core::ops::{Index, IndexMut, Not};
 use crate::chessbot::engine::Move;
+use crate::chessbot::engine::Engine;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PieceColor {
@@ -66,7 +67,7 @@ pub struct Board {
 
     pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
-    pub casling_attacks: u64,
+    pub casling_attacks: [u64; 4],
     pub en_passant: u8, //postion of avilbe en passant
     pub check_real: u64, //TODO USE BOOL AND CAL AS NEEDED
     pub check_full: u64,
@@ -78,7 +79,7 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(fen_str: &str) -> Self {
+    pub fn new(fen_str: &str, engine: &Engine) -> Self {
         //println!("{}", fen_str);
         let mut wp = 0;
         let mut wb = 0;
@@ -156,6 +157,8 @@ impl Board {
             }
         }
 
+        casling |= casling << 4;
+
         //En Passant
         if fen[3] != "-" {
             let square: Vec<char> = fen[3].chars().collect();
@@ -186,8 +189,8 @@ impl Board {
             } else {
                 PieceColor::Black
             },
-            casling: 0b1111_0000 | casling,
-            casling_attacks: 0,//TODO CHECK IF FEN STRING HAS ANY ATTACKS
+            casling: 0b0000_0000 | casling,
+            casling_attacks: [0; 4],//TODO CHECK IF FEN STRING HAS ANY ATTACKS
             check_real: 0, //TODO CHECK IF ANY KING IS IN CHECK AND BY WHO
             check_full: 0,
             en_passant: ep,
@@ -196,8 +199,6 @@ impl Board {
             occupied: wp | wb | wn | wr | wq | wk | bp | bb | bn | br | bq | bk,
             pieces: [wp | wb | wn | wr | wq | wk, bp | bb | bn | br | bq | bk],
         };
-
-        new_board.update_check();
 
         return new_board;
     }
@@ -257,23 +258,49 @@ impl Board {
 
         //CHECK FOR CHECK
         if new_board.casling != 0 && (pt == PieceType::Rook || pt == PieceType::King) {
-
+            println!("HERE ({}, {})", from, to);
             if pt == PieceType::King {
-                let values = match pc {
-                    PieceColor::White => 0b0011,
-                    PieceColor::Black => 0b1100,
+                println!("BURNING...");
+                let values; 
+                match pc {
+                    PieceColor::White => {
+                        values = 0b0011_0011;
+                        new_board.casling_attacks[2] = 0;
+                        new_board.casling_attacks[3] = 0;
+                    },
+                    PieceColor::Black => {
+                        values = 0b1100_1100;
+                        new_board.casling_attacks[0] = 0;
+                        new_board.casling_attacks[1] = 0;
+
+                    }
                 };
 
                 new_board.casling &= values;
             } else {
-
+                println!("COOKING...");
                 //if rook cencel side its on
                 //check if from mathces
                 match from {
-                    0 => new_board.casling &= 0b1011, //white kingside
-                    7 => new_board.casling &= 0b0111, //white queenside
-                    56 => new_board.casling &= 0b1110, //black kingside
-                    63 => new_board.casling &= 0b1101, //black queenside
+                    0 => {
+                        new_board.casling &= 0b0111_0111;
+                        new_board.casling_attacks[3] = 0; 
+                    }, //white queenside
+                    7 => {
+                        println!("--{}--", new_board.casling);
+                        new_board.casling &= 0b1011_1011;
+                        new_board.casling_attacks[2] = 0;
+                        println!("--{}--", new_board.casling);
+                        println!("DONE");
+                    }, //white kingside
+                    56 => {
+                        new_board.casling &= 0b1101_1101;
+                        new_board.casling_attacks[1] = 0; 
+                    }, //black queenside
+                    63 => {
+                        new_board.casling &= 0b1110_1110;
+                        new_board.casling_attacks[0] = 0; 
+                    }, //black kingside
                     _ => {}
                 };
             }
@@ -288,8 +315,6 @@ impl Board {
         new_board.remove_piece(from, &pt, pc);
         //Add piece to to pos
         new_board.add_piece(to, &pt, pc);
-
-        new_board.update_check();
 
         new_board.recalc_board();
 
@@ -454,8 +479,6 @@ impl Board {
         new_board.add_piece(king_to_pos, &PieceType::King, new_board.turn);
         new_board.add_piece(rook_to_pos, &PieceType::Rook, new_board.turn);
 
-        new_board.update_check();
-
         new_board.recalc_board();
 
         new_board.next_turn();
@@ -477,6 +500,12 @@ impl Board {
     }
 
     pub fn print_board(&self) {
+        let set = [["P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"], 
+                   ["󰡙", "󰡘", "󰡜", "󰡛", "󰡚", "󰡗", "", "", "", "", "", ""]
+                ];
+
+        let n = 1; //Replace with cmd arg
+
         println!(
             "\n{} to move:",
             (if self.turn == PieceColor::White {
@@ -492,29 +521,29 @@ impl Board {
                 let i = (r * 8) + f;
 
                 if ((self.pawns[PieceColor::White] >> i) & 1) == 1 {
-                    print!("P ");
+                    print!("{} ", set[n][0]);
                 } else if ((self.bishops[PieceColor::White] >> i) & 1) == 1 {
-                    print!("B ");
+                    print!("{} ", set[n][2]);
                 } else if ((self.knights[PieceColor::White] >> i) & 1) == 1 {
-                    print!("N ");
+                    print!("{} ", set[n][1]);
                 } else if ((self.rooks[PieceColor::White] >> i) & 1) == 1 {
-                    print!("R ");
+                    print!("{} ", set[n][3]);
                 } else if ((self.queens[PieceColor::White] >> i) & 1) == 1 {
-                    print!("Q ");
+                    print!("{} ", set[n][4]);
                 } else if ((self.kings[PieceColor::White] >> i) & 1) == 1 {
-                    print!("K ");
+                    print!("{} ", set[n][5]);
                 } else if ((self.pawns[PieceColor::Black] >> i) & 1) == 1 {
-                    print!("p ");
+                    print!("{} ", set[n][6]);
                 } else if ((self.bishops[PieceColor::Black] >> i) & 1) == 1 {
-                    print!("b ");
+                    print!("{} ", set[n][8]);
                 } else if ((self.knights[PieceColor::Black] >> i) & 1) == 1 {
-                    print!("n ");
+                    print!("{} ", set[n][7]);
                 } else if ((self.rooks[PieceColor::Black] >> i) & 1) == 1 {
-                    print!("r ");
+                    print!("{} ", set[n][9]);
                 } else if ((self.queens[PieceColor::Black] >> i) & 1) == 1 {
-                    print!("q ");
+                    print!("{} ", set[n][10]);
                 } else if ((self.kings[PieceColor::Black] >> i) & 1) == 1 {
-                    print!("k ");
+                    print!("{} ", set[n][11]);
                 } else {
                     if i == self.en_passant {
                         print!("# ");
@@ -578,9 +607,4 @@ impl Board {
         println!();
     }
 
-    fn update_check(&mut self) {
-
-        self.check_real = 0;
-        self.check_full = 0;
-    }
 }
