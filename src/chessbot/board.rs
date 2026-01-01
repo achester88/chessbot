@@ -258,9 +258,7 @@ impl Board {
 
         //CHECK FOR CHECK
         if new_board.casling != 0 && (pt == PieceType::Rook || pt == PieceType::King) {
-            println!("HERE ({}, {})", from, to);
             if pt == PieceType::King {
-                println!("BURNING...");
                 let values; 
                 match pc {
                     PieceColor::White => {
@@ -278,7 +276,6 @@ impl Board {
 
                 new_board.casling &= values;
             } else {
-                println!("COOKING...");
                 //if rook cencel side its on
                 //check if from mathces
                 match from {
@@ -287,11 +284,8 @@ impl Board {
                         new_board.casling_attacks[3] = 0; 
                     }, //white queenside
                     7 => {
-                        println!("--{}--", new_board.casling);
                         new_board.casling &= 0b1011_1011;
                         new_board.casling_attacks[2] = 0;
-                        println!("--{}--", new_board.casling);
-                        println!("DONE");
                     }, //white kingside
                     56 => {
                         new_board.casling &= 0b1101_1101;

@@ -125,7 +125,6 @@ impl Engine {
                     }
                 },
                 PieceColor::Black => {
-                    println!("#################### {} {}", board.casling, board.casling & 0b0010_0010);
                     if board.casling & 0b0010_0010 == 0b0010_0010 { //queenside
                         all_moves.push(board.castle(88));
                     }
@@ -168,6 +167,19 @@ impl Engine {
                         new_board.casling_attacks[1] &= !change;
                         new_board.casling_attacks[2] &= !change;
                         new_board.casling_attacks[3] &= !change;
+
+                        if new_board.casling_attacks[0] == 0 {
+                            new_board.casling |= 0b0001_0000;
+                        }
+                        if new_board.casling_attacks[1] == 0 {
+                            new_board.casling |= 0b0010_0000;
+                        }
+                        if new_board.casling_attacks[2] == 0 {
+                            new_board.casling |= 0b0100_0000;
+                        }
+                        if new_board.casling_attacks[3] == 0 {
+                            new_board.casling |= 0b1000_0000;
+                        }
                         //Will be reacalcuated if hits again
                     }
 
@@ -219,12 +231,7 @@ impl Engine {
                             PieceColor::Black => att & 0x76 != 0 && board.casling & 0b1100 != 0,
                         };
 
-                        println!("#####################");
-                        println!("{} || {} :: {}", board.casling, hit_rank, board.casling & 0b0011 != 0);
-                        println!("#####################");
-
                         if hit_rank {
-                            println!("Castle for !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
                             //Find Square
                             if att & 0x7000000000000000 != 0 && new_board.casling & 0b0001 != 0 {//Black King Side
