@@ -8,10 +8,10 @@ fn main() {
     //"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq e4 0 1"
     //let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     //let board = Board::new("8/8/8/8/3K4/8/8/8 w - - 0 1");
-    let eng = Engine::new();
-    let board = Board::new("8/8/8/8/8/4R3/8/8 w - - 0 1", &eng);
-    println!("{:?}", eng.gen_moves(board));
-    /*loop {
+    //let eng = Engine::new();
+    //let board = Board::new("8/8/8/8/8/4R3/8/8 w - - 0 1", &eng);
+    //println!("{:?}", eng.gen_moves(board));
+    loop {
         let _=stdout().flush();
         let mut input=String::new();
         stdin().read_line(&mut input).unwrap();
@@ -22,11 +22,12 @@ fn main() {
                 println!("id name My Engine");
                 println!("id author Anthony Chester");
                 println!("uciok");
-            }
+            },
+            "isready\n" => println!("readyok"),
             _ => {}
         }
-        println!("Cmd: |{}|", commands[0]);
-    }*/
+        //println!("Cmd: |{}|", commands[0]);
+    }
 }
 
 /*

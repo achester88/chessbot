@@ -330,3 +330,23 @@ fn queenside_blocked_castling() {
 
 
 }
+
+#[test]
+fn discovered_check() {
+    let eng = Engine::new();
+    let board = Board::new("8/1k6/8/8/8/5P2/6B1/8 w - - 0 1", &eng);
+    let (_, _, start) = eng.gen_moves(board)[3];
+
+    let mut fen_moves = fen_arr(49, vec!(
+        (40, "8/8/k7/8/5P2/8/6B1/8 b - - 1 1"),
+        (41, "8/8/1k6/8/5P2/8/6B1/8 b - - 1 1"),
+        (48, "8/k7/8/8/5P2/8/6B1/8 b - - 1 1"),
+        (50, "8/2k5/8/8/5P2/8/6B1/8 b - - 1 1"),
+        (57, "1k6/8/8/8/5P2/8/6B1/8 b - - 1 1"),
+        (58, "2k5/8/8/8/5P2/8/6B1/8 b - - 1 1"),
+    ));
+
+    let moves = eng.gen_moves(start);
+
+    assert_eq!(moves, fen_moves);
+}
