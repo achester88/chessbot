@@ -44,3 +44,4 @@ fn main() {
 //
 
 //TODO FIX revealed Attacks
+//TODO EACH TURN LOOK IF KING IS UNDER ATTACK BY ANY PIECES

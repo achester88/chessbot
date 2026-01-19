@@ -233,7 +233,7 @@ impl Board {
                 //knights
                 return (color, PieceType::Knight);
             }
-        } else if board & (self.rooks[color] | self.queens[color] | self.kings[color]) != 0 {
+        } else {
             if board & self.rooks[color] != 0 {
                 return (color, PieceType::Rook);
             } else if board & self.queens[color] != 0 {

@@ -46,6 +46,8 @@ impl Engine {
 
         let mut possable: Vec<(usize, u64)> = vec![];
 
+        //######### BASIC MOVE GEN #########
+
         let queens = board_serialize(board.queens[board.turn]);
         for i in queens {
             possable.push(self.gen_queen_moves(&board, i, board.pieces[board.turn]));
@@ -108,6 +110,8 @@ impl Engine {
             possable.push(self.gen_knight_moves(&board, i, board.turn));
         }
 
+        //######### Castle Logic #########
+
         let can_castle = board.casling & 0b0000_1111 != 0;
         let not_check = board.check_real == 0;
 
@@ -147,6 +151,8 @@ impl Engine {
         let all_caslt_spots = board.casling_attacks[0] | board.casling_attacks[1] | board.casling_attacks[2] | board.casling_attacks[3];
 
 
+        //######### New Board Gen Loop #########
+
         for i in 0..possable.len() {
             let (from, moves) = possable[i];
             let moves_to = board_serialize(moves);
@@ -162,6 +168,7 @@ impl Engine {
                     
                     let change = (1 << to) | (1 << from);
 
+                    //Resets caslting info is a piece is moved that affects it
                     if change & all_caslt_spots != 0 {
                         new_board.casling_attacks[0] &= !change;
                         new_board.casling_attacks[1] &= !change;
@@ -183,35 +190,16 @@ impl Engine {
                         //Will be reacalcuated if hits again
                     }
 
-
-                    if (1 << to) & attackable_check_pos != 0 {
-                        let (pc, pt) = board.lookup(from);
-                        let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
-                            PieceType::Pawn => self.gen_pawn_moves(&board, to, board.turn), //en_pass??
-                            PieceType::Knight => self.gen_knight_moves(&board, to, board.turn),
-                            PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[board.turn]),
-                            PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[board.turn]),
-                            PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[board.turn]),
-                            PieceType::King => (0, 0),
-                            PieceType::Empty => panic!("Empty can not check"),
-
-                        };
-                        if (att & (1 << king_pos[0])) != 0 {
-                            let (check_real, check_full) = self.gen_check_info(&new_board, to, king_pos[0]);
-                            //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
-                            new_board.check_real = check_real;
-                            new_board.check_full = check_full;
-                        } else {
-                            new_board.check_real = 0;
-                            new_board.check_full = 0;
-                        }
-                        //if pt attcks
-                    
+                    //Calcs check
+                    if king_pos.len() > 0 {
+                        let (cr, cf) = self.cal_check(&new_board, king_pos[0]);
+                        println!("################### {} : {} #########################", cr, cf);
+                        new_board.check_real = cr;
+                        new_board.check_full = cf;
                     } else {
                         new_board.check_real = 0;
                         new_board.check_full = 0;
                     }
-
 
                     if can_castle {
 
@@ -409,6 +397,40 @@ impl Engine {
 
         //print_bitboard_pos(attack, sq);
         return (sq, attack); //board_serialize(attack);
+    }
+
+    pub fn cal_check(&self, board: &Board, pos: usize) -> (u64, u64) {
+        let mut check_real = 0;
+        let mut check_full = 0;
+        let attackable_check_pos = self.gen_king_attackables(pos);
+
+        let hits = attackable_check_pos & board.pieces[!board.turn];
+
+        let hits_pos = board_serialize(hits);
+
+        for to in hits_pos {
+            if (1 << to) & attackable_check_pos != 0 {
+                let (pc, pt) = board.lookup(to);
+                let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
+                    PieceType::Pawn => self.gen_pawn_moves(&board, to, !board.turn), //en_pass??
+                    PieceType::Knight => self.gen_knight_moves(&board, to, !board.turn),
+                    PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[!board.turn]),
+                    PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[!board.turn]),
+                    PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[!board.turn]),
+                    PieceType::King => (0, 0),
+                    PieceType::Empty => panic!("Empty can not check"),
+                };
+                if (att & (1 << pos)) != 0 {
+                    let (cr, cf) = self.gen_check_info(&board, to, pos);
+                    //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
+                    check_real |= cr;
+                    check_full |= cf;
+                }
+            }
+
+        }
+
+        (check_real, check_full)
     }
 
     fn gen_king_attackables(&self, pos: usize) -> u64 {
