@@ -80,7 +80,6 @@ pub struct Board {
 
 impl Board {
     pub fn new(fen_str: &str, engine: &Engine) -> Self {
-        //println!("{}", fen_str);
         let mut wp = 0;
         let mut wb = 0;
         let mut wn = 0;
@@ -111,11 +110,9 @@ impl Board {
                 r -= 1;
                 f = 0;
             } else if c.is_numeric() {
-                //println!("{}", c);
                 //i -= c.to_digit(10).unwrap() as usize;
                 f += c.to_digit(10).unwrap() as usize;
             } else {
-                //println!("{}", c);
                 let s = 1 << ((r * 8) + f); //set bit of i;
                                             //(1 << n)
                                             //print_bitboard(s);
@@ -157,14 +154,13 @@ impl Board {
             }
         }
 
-        casling |= casling << 4;
+        //casling |= casling << 4;
 
         //En Passant
         if fen[3] != "-" {
             let square: Vec<char> = fen[3].chars().collect();
             let f = (square[0].to_ascii_lowercase() as u8) - 96; //a:0, h:9
             let r = square[1].to_digit(10).unwrap() as u8;
-            println!("{}:{} = {}", r, f, (r * 8) + f);
             ep = ((r - 1) * 8) + (f - 1);
         }
 
@@ -176,7 +172,7 @@ impl Board {
         if fen.len() > 4 {
             fm = fen[5].parse::<u64>().unwrap();
         }
-        //println!("{:?}", fen);
+
         let mut new_board = Board {
             pawns: [wp, bp],
             bishops: [wb, bb],
@@ -191,7 +187,7 @@ impl Board {
             },
             casling: 0b0000_0000 | casling,
             casling_attacks: [0; 4],//TODO CHECK IF FEN STRING HAS ANY ATTACKS
-            check_real: 0, //TODO CHECK IF ANY KING IS IN CHECK AND BY WHO
+            check_real: 0,
             check_full: 0,
             en_passant: ep,
             half_moves: hm,
@@ -199,6 +195,12 @@ impl Board {
             occupied: wp | wb | wn | wr | wq | wk | bp | bb | bn | br | bq | bk,
             pieces: [wp | wb | wn | wr | wq | wk, bp | bb | bn | br | bq | bk],
         };
+
+        let (casl, casl_att) = engine.gen_init_check_info(&new_board);
+
+        println!("{:b} || {:b}", casl, casling);
+        new_board.casling |= casl;
+        new_board.casling_attacks = casl_att;
 
         return new_board;
     }
@@ -217,7 +219,6 @@ impl Board {
 
         if board & self.pieces[PieceColor::White] != 0 {
             //White
-            //println!("ggggg");
             color = PieceColor::White;
         } else {
             //Black

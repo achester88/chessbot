@@ -84,14 +84,9 @@ impl Engine {
 
                 for i in 0..moves_to.len() {
                     let to = moves_to[i];
-                    println!("----{:?} {:?}-----", from, to);
-                    print_bitboard((1 << to));
-                    print_bitboard(board.check_full);
-                    print_bitboard((1 << to) & board.check_full);
-                    println!("---------------------");
+
                     if (1 << to) & board.check_full == 0 {
-                        let mut new_board = board.move_piece(to, from); //TODO REPLACE WITH FULL
-                                                                        //CHECK (REVILED CHECK)
+                        let mut new_board = board.move_piece(to, from);
                         new_board.check_real = 0;
                         new_board.check_full = 0;
                         all_moves.push((from, to, new_board));
@@ -150,16 +145,12 @@ impl Engine {
 
         let all_caslt_spots = board.casling_attacks[0] | board.casling_attacks[1] | board.casling_attacks[2] | board.casling_attacks[3];
 
-
         //######### New Board Gen Loop #########
-
         for i in 0..possable.len() {
             let (from, moves) = possable[i];
             let moves_to = board_serialize(moves);
-            board.print_board();
-
-            for i in 0..moves_to.len() {
-                let to = moves_to[i];
+            for ii in 0..moves_to.len() {
+                let to = moves_to[ii];
 
                 if not_check || board.check_real & (1 << to) != 0 { //Not in check or to is in (check)
                     //can_castle
@@ -190,21 +181,11 @@ impl Engine {
                         //Will be reacalcuated if hits again
                     }
 
-                    //Calcs check
-                    if king_pos.len() > 0 {
-                        let (cr, cf) = self.cal_check(&new_board, king_pos[0]);
-                        println!("################### {} : {} #########################", cr, cf);
-                        new_board.check_real = cr;
-                        new_board.check_full = cf;
-                    } else {
-                        new_board.check_real = 0;
-                        new_board.check_full = 0;
-                    }
 
                     if can_castle {
 
                         let (pc, pt) = board.lookup(from);
-                        let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
+                        let (_, att) = match pt {
                             PieceType::Pawn => (0, self.pawn_attacks[board.turn as usize][to]),//self.gen_pawn_moves(&board, to, board.turn), //en_pass??
                             PieceType::Knight => self.gen_knight_moves(&board, to, board.turn),
                             PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[board.turn]),
@@ -239,7 +220,7 @@ impl Engine {
                                 new_board.casling &= 0b0111_1111;
                                 new_board.casling_attacks[3] |= (1 << to);
                             }
-                        } //TODO UNDO CASLING ATTCKS LIST
+                        }
 
 
                     }
@@ -252,8 +233,19 @@ impl Engine {
             }
         }
 
+        //Calcs check
+        for i in 0..all_moves.len() {
+                if king_pos.len() > 0 {
+                    let (cr, cf) = self.cal_check(&all_moves[i].2, king_pos[0]);
+                    all_moves[i].2.check_real = cr;
+                    all_moves[i].2.check_full = cf;
+                } else {
+                    all_moves[i].2.check_real = 0;
+                    all_moves[i].2.check_full = 0;
+            }
+        }
+
         let pawns = board_serialize(board.pawns[board.turn]);
-        //print_bitboard(board.pawns[board.turn]);
 
         println!("---------- END {} -----------", board.half_moves);
 
@@ -357,9 +349,6 @@ impl Engine {
                 | (self.pawn_attacks[PieceColor::Black as usize][sq]
                 & (board.pieces[PieceColor::White as usize] | en_pass));
         }
-      
-        //print_bitboard_pos(moves, sq);
-        //print_bitboard_pos(0, board.en_passant as usize);
 
         //
         return (sq, moves);
@@ -373,7 +362,6 @@ impl Engine {
 
         let attack = all_moves & !pieces;
 
-        //print_bitboard_pos(all_moves & !self.board.pieces[self.board.turn], sq);
         return (sq, attack); //board_serialize(attack);
     }
 
@@ -385,7 +373,6 @@ impl Engine {
 
         let attack = all_moves & !pieces;
 
-        //print_bitboard_pos(attack, sq);
         return (sq, attack); //board_serialize(attack);
     }
 
@@ -395,7 +382,6 @@ impl Engine {
 
         //let attack = all_moves & !pieces;
 
-        //print_bitboard_pos(attack, sq);
         return (sq, attack); //board_serialize(attack);
     }
 
@@ -411,7 +397,7 @@ impl Engine {
         for to in hits_pos {
             if (1 << to) & attackable_check_pos != 0 {
                 let (pc, pt) = board.lookup(to);
-                let (_, att) = match pt { //TODO USE ATT FOR CHECK REAL/FULL
+                let (_, att) = match pt {
                     PieceType::Pawn => self.gen_pawn_moves(&board, to, !board.turn), //en_pass??
                     PieceType::Knight => self.gen_knight_moves(&board, to, !board.turn),
                     PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[!board.turn]),
@@ -444,10 +430,6 @@ impl Engine {
             self.ray_attacks[Dir::NOWE as usize][pos] |
             self.knight_attacks[pos];
 
-            println!("---------gen_king_attackables---------");
-        print_bitboard_pos(board, pos);
-        println!("--------------------------------------");
-
         return board;
     }
 
@@ -463,7 +445,6 @@ impl Engine {
 
         match pt {
             PieceType::Pawn => { //TODO ACCOUNT FOR ALL!!! PIECES IN THIS MATCH
-                println!("pos: {}", pos);
                 check_real = 0;//self pos added on return //1 << pos;//self.gen_pawn_moves(&board, pos, !board.turn);
                 let (_, check_full_pre) = self.gen_pawn_moves(&board, pos, !board.turn);
                 check_full = check_full_pre & !(self.ray_attacks[Dir::North as usize][pos] | self.ray_attacks[Dir::South as usize][pos]);
@@ -497,16 +478,10 @@ impl Engine {
             _ => { panic!("Tried to Create Check With Empty Piece"); }
         }
 
-        println!("CHECK INFO");
-        print_bitboard(check_real | (1 << pos));
-        print_bitboard(check_full);
-
         (check_real | (1 << pos), check_full)
     }
 
     pub fn gen_ray_attacks(&self, occupied: u64, dir: Dir, square: usize) -> u64 {
-        //print_bitboard(occupied);
-        //print_bitboard(1 << square);
         let set = &self.ray_attacks[dir as usize];
         let mut attack: u64 = set[square];
         let block = attack & occupied;
@@ -522,6 +497,72 @@ impl Engine {
         return attack;
     }
     //move fuction that return a new board after that move
+
+    pub fn gen_init_check_info(&self, board: &Board) -> (u8, [u64; 4]) {
+
+        let posable = board.pieces[!board.turn];
+        let posable_pos = board_serialize(posable);
+
+        let mut casling = 0b1111_0000;
+        let mut casling_attacks = [0; 4];
+
+        for pos in posable_pos {
+            let (pc, pt) = board.lookup(pos);
+            let (_, att) = match pt {
+                PieceType::Pawn => (0, self.pawn_attacks[!board.turn as usize][pos]),
+                PieceType::Knight => self.gen_knight_moves(&board, pos, !board.turn),
+                PieceType::Bishop => self.gen_bishop_moves(&board, pos, board.pieces[!board.turn]),
+                PieceType::Rook => self.gen_rook_moves(&board, pos, board.pieces[!board.turn]),
+                PieceType::Queen => self.gen_queen_moves(&board, pos, board.pieces[!board.turn]),
+                PieceType::King => self.gen_king_moves(&board, pos, !board.turn),
+                PieceType::Empty => panic!("Empty can not check"),
+            };
+
+            let hit_rank = match !board.turn {
+                PieceColor::White => att & 0x7600000000000000 != 0 && board.casling & 0b0011 != 0,
+                PieceColor::Black => att & 0x76 != 0 && board.casling & 0b1100 != 0,
+            };
+
+            if hit_rank {
+
+                //Find Square
+                if att & 0x7000000000000000 != 0 && casling & 0b0001 != 0 {//Black King Side
+                    casling &= 0b1110_1111;
+                    casling_attacks[0] |= (1 << pos);
+                }
+                if att & 0x600000000000000 != 0 && casling & 0b0010 != 0 {//Black Queen Side
+                    casling &= 0b1101_1111;
+                    casling_attacks[1] |= (1 << pos);
+                }
+
+                if att & 0x70 != 0 && casling & 0b0100 != 0 {//White King Side
+                    casling &= 0b1011_1111;
+                    casling_attacks[2] |= (1 << pos);
+                }
+                if att & 0x6 != 0 && casling & 0b1000 != 0{//White Queen Side
+                    casling &= 0b0111_1111;
+                    casling_attacks[3] |= (1 << pos);
+                }
+            }
+        }
+
+        println!("|{:b}", casling);
+
+        if board.pieces[board.turn] & 0xe != 0 {
+            casling &= 0b0111_1111;
+        }
+        if board.pieces[board.turn] & 0x60 != 0 {
+            casling &= 0b1011_1111;
+        }
+        if board.pieces[board.turn] & 0xe00000000000000 != 0 {
+            casling &= 0b1101_1111;
+        }
+        if board.pieces[board.turn] & 0x600000000000000 != 0 {
+            casling &= 0b1110_1111;
+        }
+
+        (casling, casling_attacks)
+    }
 }
 
 //https://www.chessprogramming.org/On_an_empty_Board#Rays_by_Line
@@ -612,10 +653,6 @@ fn gen_ray_attacks() -> Vec<Vec<u64>> {
             sowe = postshift::west_one(sowe);
         }
     }
-
-    /*for i in 0..64 {
-      print_bitboard_pos(attacks[Dir::SOWE as usize][i],i);
-    }*/
 
     return attacks;
 }

@@ -145,8 +145,6 @@ fn pawn_capture_promote() {
     )));
 }
 
-//TODO TEST KING CAPTURE CHECK?
-
 #[test]
 fn king_check() {
     let eng = Engine::new();
@@ -255,6 +253,7 @@ fn king_to_check_next() {
 fn king_castling() {
     let eng = Engine::new();
     let board = Board::new("4k3/8/8/8/8/8/8/4K2R w K - 0 1", &eng);
+    println!("{:b}", board.casling);
     let moves = eng.gen_moves(board);
 
     let mut fen_moves: Vec<Move>;
@@ -350,5 +349,70 @@ fn discovered_check() {
 
 
 
+    assert_eq!(moves, fen_moves);
+}
+
+#[test]
+fn king_capture_check() {
+    let eng = Engine::new();
+    let board = Board::new("8/1k6/8/8/8/2K5/6r1/8 b - - 1 1", &eng);
+
+    let (_, _, start) = eng.gen_moves(board)[3];
+
+    let moves = eng.gen_moves(start);
+
+    let mut fen_moves = fen_arr(18, vec!(
+        (10, "8/1k6/8/8/8/8/2K5/8 b - - 3 2"),
+        (17, "8/1k6/8/8/8/1K6/2r5/8 b - - 3 2"),
+        (19, "8/1k6/8/8/8/3K4/2r5/8 b - - 3 2"),
+        (25, "8/1k6/8/8/1K6/8/2r5/8 b - - 3 2"),
+        (27, "8/1k6/8/8/3K4/8/2r5/8 b - - 3 2"),
+    ));
+
+
+    println!("Moves: {:?}", eng.gen_moves(board)[3]);
+    assert_eq!(moves, fen_moves);
+}
+
+//Double Check
+#[test]
+fn king_capture_double_check() {
+    let eng = Engine::new();
+    let board = Board::new("8/1k6/8/5q2/8/2K5/2r5/8 b - - 1 1", &eng);
+
+    let (_, _, start) = eng.gen_moves(board)[16];
+
+    let moves = eng.gen_moves(start);
+
+    let fen_moves = fen_arr(18, vec!(
+        (10, "8/1k6/5q2/8/8/8/2K5/8 b - - 3 2"),
+        (17, "8/1k6/5q2/8/8/1K6/2r5/8 b - - 3 2"),
+        (19, "8/1k6/5q2/8/8/3K4/2r5/8 b - - 3 2"),
+        (25, "8/1k6/5q2/8/1K6/8/2r5/8 b - - 3 2"),
+    ));
+
+    assert_eq!(moves, fen_moves);
+}
+
+#[test]
+fn black_promotion_check() {
+    let eng = Engine::new();
+    let board = Board::new("8/1P6/3k4/8/8/7K/8/8 w - - 1 1", &eng);
+
+    let (_, _, start) = eng.gen_moves(board)[3];
+
+    let moves = eng.gen_moves(start);
+
+    let fen_moves = fen_arr(43, vec!(
+        (34, "1Q6/8/8/2k5/8/7K/8/8 w - - 3 2"),
+        (35, "1Q6/8/8/3k4/8/7K/8/8 w - - 3 2"),
+        (42, "1Q6/8/2k5/8/8/7K/8/8 w - - 3 2"),
+        (44, "1Q6/8/4k3/8/8/7K/8/8 w - - 3 2"),
+        (51, "1Q6/3k4/8/8/8/7K/8/8 w - - 3 2"),
+        (52, "1Q6/4k3/8/8/8/7K/8/8 w - - 3 2"),
+    ));
+
+
+    println!("Moves: {:?}", eng.gen_moves(board)[3]);
     assert_eq!(moves, fen_moves);
 }
