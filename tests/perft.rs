@@ -102,6 +102,15 @@ fn p3_two() {
 }
 
 #[test]
+fn p3_three() {
+    let engine = Engine::new();
+    let board = Board::new("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", &engine);
+    let count = perft(board, 2);
+
+    assert_eq!(count, 2812);
+}
+
+#[test]
 fn p4_one() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", &engine);
@@ -114,9 +123,72 @@ fn p4_one() {
 fn p4_two() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", &engine);
+    let count = perft(board, 3);
+
+    assert_eq!(count, 9467);
+}
+
+#[test]
+fn p4_three() {
+    let engine = Engine::new();
+    let board = Board::new("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", &engine);
     let count = perft(board, 2);
 
     assert_eq!(count, 264);
+}
+
+#[test]
+fn p5_one() {
+    let engine = Engine::new();
+    let board = Board::new("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", &engine);
+    let count = perft(board, 1);
+
+    assert_eq!(count, 44);
+}
+
+#[test]
+fn p5_two() {
+    let engine = Engine::new();
+    let board = Board::new("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", &engine);
+    let count = perft(board, 2);
+
+    assert_eq!(count, 1486);
+}
+
+#[test]
+fn p5_three() {
+    let engine = Engine::new();
+    let board = Board::new("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", &engine);
+    let count = perft(board, 3);
+
+    assert_eq!(count, 62379);
+}
+
+#[test]
+fn p6_one() {
+    let engine = Engine::new();
+    let board = Board::new("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", &engine);
+    let count = perft(board, 1);
+
+    assert_eq!(count, 1);
+}
+
+#[test]
+fn p6_two() {
+    let engine = Engine::new();
+    let board = Board::new("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", &engine);
+    let count = perft(board, 2);
+
+    assert_eq!(count, 46);
+}
+
+#[test]
+fn p6_three() {
+    let engine = Engine::new();
+    let board = Board::new("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", &engine);
+    let count = perft(board, 3);
+
+    assert_eq!(count, 2079);
 }
 
 //https://www.chessprogramming.org/Perft_Results
