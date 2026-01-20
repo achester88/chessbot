@@ -198,7 +198,7 @@ impl Board {
 
         let (casl, casl_att) = engine.gen_init_casling_info(&new_board);
 
-        println!("{:b} || {:b}", casl, casling);
+        //println!("{:b} || {:b}", casl, casling);
         new_board.casling |= casl;
         new_board.casling_attacks = casl_att;
 

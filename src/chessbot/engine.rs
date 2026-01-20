@@ -37,11 +37,11 @@ impl Engine {
     }
     //from, to, new board
     pub fn gen_moves(&self, board: Board) -> Vec<Move> {
-        println!("---------- Gen Moves {} -----------", board.half_moves);
+        //println!("---------- Gen Moves {} -----------", board.half_moves);
 
-        board.print_board();
-        println!("----------------------------------");
-        println!("\n");
+        //board.print_board();
+        //println!("----------------------------------");
+        //println!("\n");
 
         let mut all_moves: Vec<Move> = vec![];
 
@@ -107,7 +107,7 @@ impl Engine {
         }
 
         //######### Castle Logic #########
-        println!("######################################## {:b}", board.casling);
+        //println!("######################################## {:b}", board.casling);
         let can_castle = board.casling & 0b0000_1111 != 0;
         let not_check = board.check_real == 0;
 
@@ -266,12 +266,12 @@ impl Engine {
 
         //for testing
         for (_, _, all_board) in &all_moves {
-            all_board.print_board();
+            //all_board.print_board();
         }
 
         let pawns = board_serialize(board.pawns[board.turn]);
 
-        println!("---------- END {} -----------", board.half_moves);
+        //println!("---------- END {} -----------", board.half_moves);
 
         return all_moves;
     }
@@ -570,7 +570,7 @@ impl Engine {
             }
         }
 
-        println!("|{:b}", casling);
+        //println!("|{:b}", casling);
 
         if board.pieces[PieceColor::White] & 0xe != 0 {
             casling &= 0b0111_1111;
