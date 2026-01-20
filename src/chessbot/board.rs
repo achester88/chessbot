@@ -196,7 +196,7 @@ impl Board {
             pieces: [wp | wb | wn | wr | wq | wk, bp | bb | bn | br | bq | bk],
         };
 
-        let (casl, casl_att) = engine.gen_init_check_info(&new_board);
+        let (casl, casl_att) = engine.gen_init_casling_info(&new_board);
 
         println!("{:b} || {:b}", casl, casling);
         new_board.casling |= casl;
@@ -335,7 +335,7 @@ impl Board {
                 };
             }
 
-            if (to - 16) == from && from > 7 && from < 16 {
+            if to > 16 && (to - 16) == from && from > 7 && from < 16 {
                 //white
                 self.en_passant = (to as u8) - 8; //south_one
             } else if to > 15 && (to - 16) == from && from > 47 && from < 56 {

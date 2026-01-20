@@ -40,6 +40,7 @@ impl Engine {
         println!("---------- Gen Moves {} -----------", board.half_moves);
 
         board.print_board();
+        println!("----------------------------------");
         println!("\n");
 
         let mut all_moves: Vec<Move> = vec![];
@@ -106,7 +107,7 @@ impl Engine {
         }
 
         //######### Castle Logic #########
-
+        println!("######################################## {:b}", board.casling);
         let can_castle = board.casling & 0b0000_1111 != 0;
         let not_check = board.check_real == 0;
 
@@ -196,27 +197,27 @@ impl Engine {
                         };
 
                         let hit_rank = match board.turn {
-                            PieceColor::White => att & 0x7600000000000000 != 0 && board.casling & 0b0011 != 0,
-                            PieceColor::Black => att & 0x76 != 0 && board.casling & 0b1100 != 0,
+                            PieceColor::White => att & 0x6e00000000000000 != 0 && board.casling & 0b0011 != 0,
+                            PieceColor::Black => att & 0x6e != 0 && board.casling & 0b1100 != 0,
                         };
 
                         if hit_rank {
 
                             //Find Square
-                            if att & 0x7000000000000000 != 0 && new_board.casling & 0b0001 != 0 {//Black King Side
+                            if att & 0x6000000000000000 != 0 && new_board.casling & 0b0001 != 0 {//Black King Side
                                 new_board.casling &= 0b1110_1111;
                                 new_board.casling_attacks[0] |= (1 << to);
                             }
-                            if att & 0x600000000000000 != 0 && new_board.casling & 0b0010 != 0 {//Black Queen Side
+                            if att & 0xe00000000000000 != 0 && new_board.casling & 0b0010 != 0 {//Black Queen Side
                                 new_board.casling &= 0b1101_1111;
                                 new_board.casling_attacks[1] |= (1 << to);
                             }
 
-                            if att & 0x70 != 0 && new_board.casling & 0b0100 != 0 {//White King Side
+                            if att & 0x60 != 0 && new_board.casling & 0b0100 != 0 {//White King Side
                                 new_board.casling &= 0b1011_1111;
                                 new_board.casling_attacks[2] |= (1 << to);
                             }
-                            if att & 0x6 != 0 && new_board.casling & 0b1000 != 0{//White Queen Side
+                            if att & 0xe != 0 && new_board.casling & 0b1000 != 0{//White Queen Side
                                 new_board.casling &= 0b0111_1111;
                                 new_board.casling_attacks[3] |= (1 << to);
                             }
@@ -225,7 +226,6 @@ impl Engine {
 
                     }
 
-                    new_board.print_board();
                     all_moves.push((from, to, new_board));
                 }
 
@@ -234,15 +234,39 @@ impl Engine {
         }
 
         //Calcs check
-        for i in 0..all_moves.len() {
+        let mut i = 0;
+
+        while i < all_moves.len() {
+            //enemy check
                 if king_pos.len() > 0 {
-                    let (cr, cf) = self.cal_check(&all_moves[i].2, king_pos[0]);
+                    let (cr, cf) = self.cal_check(&all_moves[i].2, king_pos[0], board.turn);
                     all_moves[i].2.check_real = cr;
                     all_moves[i].2.check_full = cf;
                 } else {
                     all_moves[i].2.check_real = 0;
                     all_moves[i].2.check_full = 0;
             }
+
+
+            //self check
+            let self_king_pos = board_serialize(all_moves[i].2.kings[board.turn]);
+            if self_king_pos.len() > 0 {
+                let self_king_pos = board_serialize(all_moves[i].2.kings[board.turn]);
+                if self.cal_check(&all_moves[i].2, self_king_pos[0], !board.turn) != (0, 0) {
+                    all_moves.remove(i);
+                    //i -= 1;
+                } else {
+                    i += 1;
+                }
+            } else {
+                i += 1;
+            }
+
+        }
+
+        //for testing
+        for (_, _, all_board) in &all_moves {
+            all_board.print_board();
         }
 
         let pawns = board_serialize(board.pawns[board.turn]);
@@ -385,12 +409,12 @@ impl Engine {
         return (sq, attack); //board_serialize(attack);
     }
 
-    pub fn cal_check(&self, board: &Board, pos: usize) -> (u64, u64) {
+    pub fn cal_check(&self, board: &Board, pos: usize, color: PieceColor) -> (u64, u64) {
         let mut check_real = 0;
         let mut check_full = 0;
         let attackable_check_pos = self.gen_king_attackables(pos);
 
-        let hits = attackable_check_pos & board.pieces[!board.turn];
+        let hits = attackable_check_pos & board.pieces[color];
 
         let hits_pos = board_serialize(hits);
 
@@ -398,11 +422,11 @@ impl Engine {
             if (1 << to) & attackable_check_pos != 0 {
                 let (pc, pt) = board.lookup(to);
                 let (_, att) = match pt {
-                    PieceType::Pawn => self.gen_pawn_moves(&board, to, !board.turn), //en_pass??
-                    PieceType::Knight => self.gen_knight_moves(&board, to, !board.turn),
-                    PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[!board.turn]),
-                    PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[!board.turn]),
-                    PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[!board.turn]),
+                    PieceType::Pawn => self.gen_pawn_moves(&board, to, color), //en_pass??
+                    PieceType::Knight => self.gen_knight_moves(&board, to, color),
+                    PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[color]),
+                    PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[color]),
+                    PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[color]),
                     PieceType::King => (0, 0),
                     PieceType::Empty => panic!("Empty can not check"),
                 };
@@ -498,7 +522,7 @@ impl Engine {
     }
     //move fuction that return a new board after that move
 
-    pub fn gen_init_check_info(&self, board: &Board) -> (u8, [u64; 4]) {
+    pub fn gen_init_casling_info(&self, board: &Board) -> (u8, [u64; 4]) {
 
         let posable = board.pieces[!board.turn];
         let posable_pos = board_serialize(posable);
@@ -519,27 +543,27 @@ impl Engine {
             };
 
             let hit_rank = match !board.turn {
-                PieceColor::White => att & 0x7600000000000000 != 0 && board.casling & 0b0011 != 0,
-                PieceColor::Black => att & 0x76 != 0 && board.casling & 0b1100 != 0,
+                PieceColor::White => att & 0xe600000000000000 != 0 && board.casling & 0b0011 != 0,
+                PieceColor::Black => att & 0xe6 != 0 && board.casling & 0b1100 != 0,
             };
 
             if hit_rank {
 
                 //Find Square
-                if att & 0x7000000000000000 != 0 && casling & 0b0001 != 0 {//Black King Side
+                if att & 0x600000000000000 != 0 && casling & 0b0001 != 0 {//Black King Side
                     casling &= 0b1110_1111;
                     casling_attacks[0] |= (1 << pos);
                 }
-                if att & 0x600000000000000 != 0 && casling & 0b0010 != 0 {//Black Queen Side
+                if att & 0xe00000000000000 != 0 && casling & 0b0010 != 0 {//Black Queen Side
                     casling &= 0b1101_1111;
                     casling_attacks[1] |= (1 << pos);
                 }
 
-                if att & 0x70 != 0 && casling & 0b0100 != 0 {//White King Side
+                if att & 0x6 != 0 && casling & 0b0100 != 0 {//White King Side
                     casling &= 0b1011_1111;
                     casling_attacks[2] |= (1 << pos);
                 }
-                if att & 0x6 != 0 && casling & 0b1000 != 0{//White Queen Side
+                if att & 0xe != 0 && casling & 0b1000 != 0{//White Queen Side
                     casling &= 0b0111_1111;
                     casling_attacks[3] |= (1 << pos);
                 }
@@ -548,16 +572,16 @@ impl Engine {
 
         println!("|{:b}", casling);
 
-        if board.pieces[board.turn] & 0xe != 0 {
+        if board.pieces[PieceColor::White] & 0xe != 0 {
             casling &= 0b0111_1111;
         }
-        if board.pieces[board.turn] & 0x60 != 0 {
+        if board.pieces[PieceColor::White] & 0x60 != 0 {
             casling &= 0b1011_1111;
         }
-        if board.pieces[board.turn] & 0xe00000000000000 != 0 {
+        if board.pieces[PieceColor::Black] & 0xe00000000000000 != 0 {
             casling &= 0b1101_1111;
         }
-        if board.pieces[board.turn] & 0x600000000000000 != 0 {
+        if board.pieces[PieceColor::Black] & 0x6000000000000000 != 0 {
             casling &= 0b1110_1111;
         }
 
