@@ -1,5 +1,6 @@
 use super::bitboard::{print_bitboard, print_bitboard_pos};
 use core::ops::{Index, IndexMut, Not};
+use crate::chessbot::bitboard::board_serialize;
 use crate::chessbot::engine::Move;
 use crate::chessbot::engine::Engine;
 
@@ -198,9 +199,18 @@ impl Board {
 
         let (casl, casl_att) = engine.gen_init_casling_info(&new_board);
 
-        //println!("{:b} || {:b}", casl, casling);
         new_board.casling |= casl;
         new_board.casling_attacks = casl_att;
+
+        let king_board = new_board.kings[new_board.turn];
+        if (king_board != 0) {
+            let king_pos = board_serialize(king_board);
+            let (cr, cf) = engine.cal_check(&new_board, king_pos[0], !new_board.turn);
+
+
+            new_board.check_real = cr;
+            new_board.check_full = cf;
+        }
 
         return new_board;
     }

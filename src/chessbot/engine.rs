@@ -409,12 +409,12 @@ impl Engine {
         return (sq, attack); //board_serialize(attack);
     }
 
-    pub fn cal_check(&self, board: &Board, pos: usize, color: PieceColor) -> (u64, u64) {
+    pub fn cal_check(&self, board: &Board, pos: usize, opp_color: PieceColor) -> (u64, u64) {
         let mut check_real = 0;
         let mut check_full = 0;
         let attackable_check_pos = self.gen_king_attackables(pos);
 
-        let hits = attackable_check_pos & board.pieces[color];
+        let hits = attackable_check_pos & board.pieces[opp_color];
 
         let hits_pos = board_serialize(hits);
 
@@ -422,11 +422,11 @@ impl Engine {
             if (1 << to) & attackable_check_pos != 0 {
                 let (pc, pt) = board.lookup(to);
                 let (_, att) = match pt {
-                    PieceType::Pawn => self.gen_pawn_moves(&board, to, color), //en_pass??
-                    PieceType::Knight => self.gen_knight_moves(&board, to, color),
-                    PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[color]),
-                    PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[color]),
-                    PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[color]),
+                    PieceType::Pawn => self.gen_pawn_moves(&board, to, opp_color), //en_pass??
+                    PieceType::Knight => self.gen_knight_moves(&board, to, opp_color),
+                    PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[opp_color]),
+                    PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
+                    PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[opp_color]),
                     PieceType::King => (0, 0),
                     PieceType::Empty => panic!("Empty can not check"),
                 };
@@ -443,7 +443,7 @@ impl Engine {
         (check_real, check_full)
     }
 
-    fn gen_king_attackables(&self, pos: usize) -> u64 {
+    pub fn gen_king_attackables(&self, pos: usize) -> u64 {
         let board = self.ray_attacks[Dir::North as usize][pos] |
             self.ray_attacks[Dir::NOEA as usize][pos] |
             self.ray_attacks[Dir::East as usize][pos] |
