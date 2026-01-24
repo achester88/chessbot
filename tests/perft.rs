@@ -209,5 +209,14 @@ fn p6_four() {
     assert_eq!(count, 3894594);
 }
 
+#[test]
+fn p6_five() {
+    let engine = Engine::new();
+    let board = Board::new("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", &engine);
+    let count = perft(board, 5);
+
+    assert_eq!(count, 164075551);
+}
+
 //https://www.chessprogramming.org/Perft_Results
 //http://www.rocechess.ch/perft.html

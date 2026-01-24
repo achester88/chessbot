@@ -504,12 +504,32 @@ impl Board {
 
     }
 
+    pub fn lan_to_pos(code: &str) -> usize {
+
+        let square: Vec<char> = code.chars().collect();
+        let f = (square[0].to_ascii_lowercase() as u8) - 96; //a:0, h:9
+        let r = square[1].to_digit(10).unwrap() as u8;
+
+        (((r - 1) * 8) + (f - 1)) as usize
+    }
+
+    pub fn pos_to_lan(pos: usize) -> String {
+
+        let c = (((pos as u8) % 8) + 97) as char;
+        let n = (((pos as u8) / 8) + 1).to_string();
+
+        let mut out = c.to_string();
+        out.push_str(&n);
+
+        out
+    }
+
     pub fn print_board(&self) {
         let set = [["P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"], 
                    ["󰡙", "󰡘", "󰡜", "󰡛", "󰡚", "󰡗", "", "", "", "", "", ""]
                 ];
 
-        let n = 1; //Replace with cmd arg
+        let n = 0; //Replace with cmd arg
 
         println!(
             "\n{} to move:",
