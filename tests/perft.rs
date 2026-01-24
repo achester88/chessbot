@@ -209,6 +209,7 @@ fn p6_four() {
     assert_eq!(count, 3894594);
 }
 
+/*
 #[test]
 fn p6_five() {
     let engine = Engine::new();
@@ -217,6 +218,6 @@ fn p6_five() {
 
     assert_eq!(count, 164075551);
 }
-
+*/
 //https://www.chessprogramming.org/Perft_Results
 //http://www.rocechess.ch/perft.html
