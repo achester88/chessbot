@@ -69,9 +69,11 @@ impl Engine {
             let (from, moves) = self.gen_pawn_moves(&board, i, board.turn);
 
             if moves & 0xff00000000000000 != 0 || moves & 0xff != 0 {
-                let to = board_serialize(moves)[0];
-                //let new_board = board.promote(from, to);
-                all_moves.append(&mut (board.promote(from, to))); //64 out of range, no piece
+                let prmo_moves = board_serialize(moves);
+                for to in prmo_moves {
+                    //let new_board = board.promote(from, to);
+                    all_moves.append(&mut (board.promote(from, to))); //64 out of range, no piece
+                }
             } else {
                 possable.push((from, moves));
             }
@@ -208,7 +210,7 @@ impl Engine {
                                 new_board.casling &= 0b1110_1111;
                                 new_board.casling_attacks[0] |= (1 << to);
                             }
-                            if att & 0xe00000000000000 != 0 && new_board.casling & 0b0010 != 0 {//Black Queen Side
+                            if att & 0xc00000000000000 != 0 && new_board.casling & 0b0010 != 0 {//Black Queen Side
                                 new_board.casling &= 0b1101_1111;
                                 new_board.casling_attacks[1] |= (1 << to);
                             }
@@ -217,7 +219,7 @@ impl Engine {
                                 new_board.casling &= 0b1011_1111;
                                 new_board.casling_attacks[2] |= (1 << to);
                             }
-                            if att & 0xe != 0 && new_board.casling & 0b1000 != 0{//White Queen Side
+                            if att & 0xc != 0 && new_board.casling & 0b1000 != 0{//White Queen Side
                                 new_board.casling &= 0b0111_1111;
                                 new_board.casling_attacks[3] |= (1 << to);
                             }
@@ -427,7 +429,7 @@ impl Engine {
                     PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[opp_color]),
                     PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
                     PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[opp_color]),
-                    PieceType::King => (0, 0),
+                    PieceType::King => self.gen_king_moves(&board, to, opp_color),
                     PieceType::Empty => panic!("Empty can not check"),
                 };
                 if (att & (1 << pos)) != 0 {
@@ -527,7 +529,7 @@ impl Engine {
         let posable = board.pieces[!board.turn];
         let posable_pos = board_serialize(posable);
 
-        let mut casling = 0b1111_0000;
+        let mut casling = 0b1111_0000 | board.casling;
         let mut casling_attacks = [0; 4];
 
         for pos in posable_pos {
@@ -543,47 +545,49 @@ impl Engine {
             };
 
             let hit_rank = match !board.turn {
-                PieceColor::White => att & 0xe600000000000000 != 0 && board.casling & 0b0011 != 0,
-                PieceColor::Black => att & 0xe6 != 0 && board.casling & 0b1100 != 0,
+                PieceColor::White => att & 0x6e00000000000000 != 0 && board.casling & 0b0011 != 0,
+                PieceColor::Black => att & 0x6e != 0 && board.casling & 0b1100 != 0,
             };
 
             if hit_rank {
 
                 //Find Square
-                if att & 0x600000000000000 != 0 && casling & 0b0001 != 0 {//Black King Side
+                if att & 0x6000000000000000 != 0 && casling & 0b0001 != 0 {//Black King Side
                     casling &= 0b1110_1111;
                     casling_attacks[0] |= (1 << pos);
                 }
-                if att & 0xe00000000000000 != 0 && casling & 0b0010 != 0 {//Black Queen Side
+                if att & 0xc00000000000000 != 0 && casling & 0b0010 != 0 {//Black Queen Side
                     casling &= 0b1101_1111;
                     casling_attacks[1] |= (1 << pos);
                 }
 
-                if att & 0x6 != 0 && casling & 0b0100 != 0 {//White King Side
+                if att & 0x60 != 0 && casling & 0b0100 != 0 {//White King Side
                     casling &= 0b1011_1111;
                     casling_attacks[2] |= (1 << pos);
                 }
-                if att & 0xe != 0 && casling & 0b1000 != 0{//White Queen Side
+                if att & 0xc != 0 && casling & 0b1000 != 0{//White Queen Side
                     casling &= 0b0111_1111;
                     casling_attacks[3] |= (1 << pos);
                 }
             }
         }
 
-        //println!("|{:b}", casling);
+        //println!("{:b}", casling);
 
-        if board.pieces[PieceColor::White] & 0xe != 0 {
-            casling &= 0b0111_1111;
-        }
-        if board.pieces[PieceColor::White] & 0x60 != 0 {
-            casling &= 0b1011_1111;
-        }
-        if board.pieces[PieceColor::Black] & 0xe00000000000000 != 0 {
+        if board.occupied & 0xe00000000000000 != 0 {
             casling &= 0b1101_1111;
         }
-        if board.pieces[PieceColor::Black] & 0x6000000000000000 != 0 {
+        if board.occupied & 0x6000000000000000 != 0 {
             casling &= 0b1110_1111;
         }
+        if board.occupied & 0xe != 0 {
+            casling &= 0b0111_1111;
+        }
+        if board.occupied & 0x60 != 0 {
+            casling &= 0b1011_1111;
+        }
+
+        //println!("{:b}", casling);
 
         (casling, casling_attacks)
     }

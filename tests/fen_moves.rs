@@ -139,12 +139,24 @@ fn pawn_capture_promote() {
     let mut moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
 
-    assert_fen_arr(&mut moves, &mut fen_arr(50, vec!(
+    let mut fen_moves: Vec<Move> = vec![];
+
+
+    fen_moves.append(&mut fen_arr(50, vec!(
         (57, "1N6/8/8/8/8/8/8/8 b - - 1 1"),
         (57, "1B6/8/8/8/8/8/8/8 b - - 1 1"),
         (57, "1R6/8/8/8/8/8/8/8 b - - 1 1"),
         (57, "1Q6/8/8/8/8/8/8/8 b - - 1 1")
     )));
+
+    fen_moves.append(&mut fen_arr(50, vec!(
+        (58, "1pN5/8/8/8/8/8/8/8 b - - 1 1"),
+        (58, "1pB5/8/8/8/8/8/8/8 b - - 1 1"),
+        (58, "1pR5/8/8/8/8/8/8/8 b - - 1 1"),
+        (58, "1pQ5/8/8/8/8/8/8/8 b - - 1 1")
+    )));
+
+    assert_fen_arr(&mut moves,  &mut fen_moves);
 }
 
 #[test]
@@ -297,14 +309,43 @@ fn king_castling() {
 
     //assert_eq!(moves, fen_moves);
 
+}
+
+#[test]
+fn black_king_castling() {
+    let eng = Engine::new();
+    let board = Board::new("r1P1k3/P7/8/8/8/8/P7/R3K3 b Qq - 0 1", &eng);
+    //let (_, _,start) = eng.gen_moves(board)[0];
+
+    let mut fen_moves: Vec<Move>;
+
+    println!("Moves: {:?}", board);
+
+    let mut moves = eng.gen_moves(board);
+
+    fen_moves = fen_arr(56, vec!(
+        (48, "2P1k3/r7/8/8/8/8/P7/R3K3 w Q - 1 2"),
+        (57, "1rP1k3/P7/8/8/8/8/P7/R3K3 w Q - 1 2"),
+        (58, "2r1k3/P7/8/8/8/8/P7/R3K3 w Q - 1 2"),
+    ));
+
+    fen_moves.append(&mut fen_arr(60, vec!(
+        (51, "r1P5/P2k4/8/8/8/8/P7/R3K3 w Q - 1 2"),
+        (52, "r1P5/P3k3/8/8/8/8/P7/R3K3 w Q - 1 2"),
+        (53, "r1P5/P4k2/8/8/8/8/P7/R3K3 w Q - 1 2"),
+        (59, "r1Pk4/P7/8/8/8/8/P7/R3K3 w Q - 1 2"),
+        (61, "r1P2k2/P7/8/8/8/8/P7/R3K3 w Q - 1 2")
+    )));
+
+    assert_fen_arr(&mut moves, &mut fen_moves);
 
 }
 
 #[test]
 fn queenside_blocked_castling() {
     let eng = Engine::new();
-    let board = Board::new("r3k3/8/P7/8/8/8/8/4K3 w q - 0 1", &eng);
-    let (_, _,start) = eng.gen_moves(board)[0];
+    let board = Board::new("r3k3/1P6/P7/8/8/8/8/4K3 w q - 0 1", &eng);
+    let (_, _,start) = eng.gen_moves(board)[8];
 
     let mut fen_moves: Vec<Move>;
 
@@ -313,19 +354,19 @@ fn queenside_blocked_castling() {
     let mut moves = eng.gen_moves(start);
 
     fen_moves = fen_arr(56, vec!(
-        (48, "4k3/r7/8/8/8/8/8/4K3 w - - 2 2"),
+        (48, "4k3/rP6/8/8/8/8/8/4K3 w - - 2 2"),
 
-        (57, "1r2k3/P7/8/8/8/8/8/4K3 w - - 2 2"),
-        (58, "2r1k3/P7/8/8/8/8/8/4K3 w - - 2 2"),
-        (59, "3rk3/P7/8/8/8/8/8/4K3 w - - 2 2"),
+        (57, "1r2k3/PP6/8/8/8/8/8/4K3 w - - 2 2"),
+        (58, "2r1k3/PP6/8/8/8/8/8/4K3 w - - 2 2"),
+        (59, "3rk3/PP6/8/8/8/8/8/4K3 w - - 2 2"),
     ));
 
     fen_moves.append(&mut fen_arr(60, vec!(
-        (51, "r7/P2k4/8/8/8/8/8/4K3 w - - 2 2"),
-        (52, "r7/P3k3/8/8/8/8/8/4K3 w - - 2 2"),
-        (53, "r7/P4k2/8/8/8/8/8/4K3 w - - 2 2"),
-        (59, "r2k4/P7/8/8/8/8/8/4K3 w - - 2 2"),
-        (61, "r4k2/P7/8/8/8/8/8/4K3 w - - 2 2")
+        (51, "r7/PP1k4/8/8/8/8/8/4K3 w - - 2 2"),
+        (52, "r7/PP2k3/8/8/8/8/8/4K3 w - - 2 2"),
+        (53, "r7/PP3k2/8/8/8/8/8/4K3 w - - 2 2"),
+        (59, "r2k4/PP6/8/8/8/8/8/4K3 w - - 2 2"),
+        (61, "r4k2/PP6/8/8/8/8/8/4K3 w - - 2 2")
     )));
 
     assert_fen_arr(&mut moves, &mut fen_moves);

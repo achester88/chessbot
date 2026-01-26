@@ -187,7 +187,7 @@ impl Board {
                 PieceColor::Black
             },
             casling: 0b0000_0000 | casling,
-            casling_attacks: [0; 4],//TODO CHECK IF FEN STRING HAS ANY ATTACKS
+            casling_attacks: [0; 4],
             check_real: 0,
             check_full: 0,
             en_passant: ep,
@@ -206,7 +206,6 @@ impl Board {
         if (king_board != 0) {
             let king_pos = board_serialize(king_board);
             let (cr, cf) = engine.cal_check(&new_board, king_pos[0], !new_board.turn);
-
 
             new_board.check_real = cr;
             new_board.check_full = cf;
@@ -446,32 +445,32 @@ impl Board {
         match new_board.turn {
             PieceColor::White => {
                 king_from_pos = 4;
-                if code == 80 {
-                    rook_from_pos = 7;
-
-                    rook_to_pos = 5;
-                    king_to_pos = 6;
-                } else {
+                if code == 88 {
                     rook_from_pos = 0;
 
                     rook_to_pos = 3;
                     king_to_pos = 2;
+                } else {
+                    rook_from_pos = 7;
+
+                    rook_to_pos = 5;
+                    king_to_pos = 6;
                 }
 
                 new_board.casling &= 0b0011;
             },
             PieceColor::Black => {
                 king_from_pos = 60;
-                if code == 80 {
+                if code == 88 {
                     rook_from_pos = 56;
-
-                    rook_to_pos = 61;
-                    king_to_pos = 62;
-                } else {
-                    rook_from_pos = 63;
 
                     rook_to_pos = 59;
                     king_to_pos = 58;
+                } else {
+                    rook_from_pos = 63;
+
+                    rook_to_pos = 61;
+                    king_to_pos = 62;
                 }
 
                 new_board.casling &= 0b1100;

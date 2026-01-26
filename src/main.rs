@@ -5,10 +5,12 @@ use chessbot::*;
 use engine::*;
 use uci_interface::*;
 use std::io::{stdin, stdout, Write};
+use std::rc::{Rc, Weak};
 use std::sync::mpsc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 
 fn main() {
@@ -26,11 +28,10 @@ fn main() {
 
     let best_move = Arc::new(Mutex::new((0, 0, Board::new("8/8/8/8/8/8/8/8 w - - 0 1", &eng))));
 
-    let best_move_thread_clone = Arc::clone(&best_move);
-
     //TODO lock best move on search start and release after stop CMD
 
 
+    /*
     thread::spawn(move || {
         let mut searching = false;
         let mut init_board: Option<Board> = None;
@@ -48,7 +49,7 @@ fn main() {
 
                 //Testing
                 *best_move_lock = moves[0];
-
+                println!("Moves: {:?}", moves);
 
                 let (from, to, board) = moves[0];
 
@@ -58,7 +59,7 @@ fn main() {
                 searching = false;
                 drop(best_move_lock);
 
-                println!("bestmove {}{}", Board::pos_to_lan(from), Board::pos_to_lan(to));
+                //println!("bestmove {}{}", Board::pos_to_lan(from), Board::pos_to_lan(to));
                 //board needs to go back to interface inf
             }
 
@@ -71,7 +72,7 @@ fn main() {
                     Cmd::Set(board) => {
                         init_board = Some(board);
                     },
-                    Cmd::Go => {
+                    Cmd::GoInf => {
                         searching = true;
                         //best_move_lock = best_move_thread_clone.lock().unwrap();
                     }
@@ -89,16 +90,23 @@ fn main() {
         //let val = String::from("hi");
         //tx.send(val).unwrap();
     });
+    */
 
+    let stop_calculation = Arc::new(AtomicBool::new(false));;//Rc::new(false);//Arc::new(Mutex::new(false));
+    let finished_calculation = Arc::new(AtomicBool::new(false));
 
     let mut interface = UciInterface::new();
+    //let engine = Engine::new();
+
+    //let engine = Arc::new(Mutex::new(Engine::new()));
 
     loop {
         //tx.send(0).unwrap();
         //let best_move_lock = best_move.lock().unwrap();
         //println!("- {}", *best_move_lock);
         //drop(best_move_lock);
-        //thread::sleep(Duration::new(1, 0));
+        //thread::sleep(Duration::new(1, 0))
+
         let _=stdout().flush();
         let mut input=String::new();
         stdin().read_line(&mut input).unwrap();
@@ -120,13 +128,74 @@ fn main() {
             let cmd = cmd_out.clone().unwrap();
             tx.send(cmd).unwrap();
 
-            if cmd_out.unwrap() == Cmd::Stop {
+            match cmd_out.unwrap() {
+                Cmd::GoInf => {
+
+                    let best_move_thread_clone = Arc::clone(&best_move);
+
+                    let stop_calculation_clone = Arc::clone(&stop_calculation);
+                    let finished_calculation_clone = Arc::clone(&finished_calculation);
+
+                    //let eng_clone = Arc::clone(&engine);
+
+                    let cal_board = interface.current_board.clone();
+                    //let eng_ref = &engine;
+
+                    thread::spawn(move || {
+                        let mut cur_best_move: Option<Move> = None;
+                        let mut self_stop = false;
+
+                        let engine = Engine::new();
+
+                        //let mut eng_ref = best_move_thread_clone.lock().unwrap();
+
+                        while !stop_calculation_clone.load(Ordering::Relaxed) && !self_stop {
+                            let new_move = engine.gen_moves(cal_board.unwrap());
+
+                            cur_best_move = Some(new_move[0]);
+                            self_stop = true;
+                        }
+
+                        let mut best_move_lock = best_move_thread_clone.lock().unwrap();
+                        *best_move_lock = cur_best_move.unwrap();
+                        finished_calculation_clone.store(true, Ordering::Relaxed);
+
+
+                    });
+                    let start = Instant::now();
+
+                    while !finished_calculation.load(Ordering::Relaxed) {
+                        //let duration = start.elapsed();
+                        //if duration.as_millis() > 10 { //Placeholder
+                            //println!("info string Time elapsed: {:?}", duration);
+                        //}
+                    }
+
+                    //shutdown.store(true, Ordering::Relaxed);
+                    let best_move_lock = best_move.lock().unwrap();
+                    let (from, to, board) = *best_move_lock;
+                    match (from, to) {
+                        (80, 80) => println!("bestmove O-O"),
+                        (88, 88) => println!("bestmove O-O-O"),
+                        _ => println!("bestmove {}{}", Board::pos_to_lan(from), Board::pos_to_lan(to))
+                    }
+                    interface.current_board = Some(board);
+                    finished_calculation.store(false, Ordering::Relaxed);
+                    stop_calculation.store(false, Ordering::Relaxed);
+
+                },
+                _ => {}
+            }
+
+            /*
+            if cmd == Cmd::Stop || cmd_out.unwrap() == Cmd::GoInf {
                 //break; //TODO Replace with wait for bestmove
                 let best_move_lock = best_move.lock().unwrap();
                 let (from, to, board) = *best_move_lock;
                 println!("bestmove {}{}/n", Board::pos_to_lan(from), Board::pos_to_lan(to));
                 interface.current_board = Some(board);
             }
+            */
         }
     }
 }
