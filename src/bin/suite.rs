@@ -81,9 +81,12 @@ fn main()-> ExitCode {
 
     let full_start = Instant::now();
 
-    for test in tests {
+    let mut c = 0;
+
+    while c < tests.len() {
+        let test = &tests[c];
         let test_start = Instant::now();
-        println!("FEN: |{}|", test.fen);
+        println!("({}/{}) FEN: |{}|", (c+1), tests.len(), test.fen);
 
         let board = Board::new(&test.fen, &engine);
         let mut i = 0;
@@ -128,12 +131,14 @@ fn main()-> ExitCode {
             i += 1;
         }
 
+        c += 1;
         println!("Time: {:?}(s)", test_start.elapsed().as_secs_f64());
         println!();
     }
 
     println!("\n\n-----------------------------------------------------");
     println!("Finished Perft Testing Suite\n");
+    println!("Total FENs Done: {:?}", c);
     println!("Total Test Done: {:?}", test_done);
     println!("Total Time: {:?}(s)\n", full_start.elapsed().as_secs_f64());
     println!("\x1b[1;32mPassed\x1b[0m: {} ({}%)", results[0], calc_perc(results[0], test_done));
@@ -142,7 +147,7 @@ fn main()-> ExitCode {
     println!("Smallest: |{}|", smallest.clone().unwrap().fen);
     println!("  Depth: {}", smallest_i);
     println!("  Expected: {}", smallest.unwrap().node_count[smallest_i]);
-    println!("\n\n-----------------------------------------------------");
+    println!("\n-----------------------------------------------------");
 
 
     if (results[2] == 0) {

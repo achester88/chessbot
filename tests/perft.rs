@@ -12,7 +12,7 @@ fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
     let moves = eng.gen_moves(board);
     //println!("moves count: {:?}", moves);
     for m in moves {
-        let (_, _, new_board) = m;
+        let (from, to, new_board) = m;
         //new_board.print_board();
         count += perft(&eng, new_board, depth - 1);
     }
@@ -212,11 +212,62 @@ fn p6_four() {
 #[test]
 fn custom() {
     let engine = Engine::new();
-    let board = Board::new("r3k3/1K6/8/8/8/8/8/8 w q - 0 1", &engine);
+    let board = Board::new("r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1", &engine);
     let count = perft(&engine, board, 2);
 
-    assert_eq!(count, 49);
+    assert_eq!(count, 547);
 }
+
+#[test]
+fn custom_c() {
+    let engine = Engine::new();
+    let board = Board::new("r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1", &engine);
+
+    let new_board = board.move_lan(&engine, "a1b1");
+    let count = perft(&engine, board, 1);
+
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1b1"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1c1"), 1), 24);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1d1"), 1), 22);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a2"), 1), 24);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a3"), 1), 23);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a4"), 1), 22);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a5"), 1), 21);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a6"), 1), 20);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a7"), 1), 16);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a8"), 1), 3);
+
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1f1"), 1), 23);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1h1"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g2"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g3"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g4"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g5"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g6"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g7"), 1), 22);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g8"), 1), 4);
+
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1d1"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1f1"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1d2"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1e2"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1f2"), 1), 25);
+    let (_, _, cm) = board.castle(88);
+    assert_eq!(perft(&engine, cm, 1), 22);
+}
+
+#[test]
+fn custom_c_1() {
+    let engine = Engine::new();
+    let board = Board::new("r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1", &engine);
+    println!("-----------");
+    let (_, _, cm) = board.castle(88);
+    assert_eq!(perft(&engine, cm, 1), 22);
+
+
+}
+
+//Rook Capture, respawn when calsing
 
 /*
 #[test]

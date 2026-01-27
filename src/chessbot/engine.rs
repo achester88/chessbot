@@ -43,6 +43,12 @@ impl Engine {
         //println!("----------------------------------");
         //println!("\n");
 
+        //if only kings or missing king, game over -> no moves
+
+        //if (board.occupied & !(board.kings[PieceColor::Black] | board.kings[PieceColor::White])) == 0 ||  board.kings[PieceColor::Black] == 0 ||  board.kings[PieceColor::White] == 0 {
+            //return vec![];
+        //}
+
         let mut all_moves: Vec<Move> = vec![];
 
         let mut possable: Vec<(usize, u64)> = vec![];
@@ -110,8 +116,8 @@ impl Engine {
 
         //######### Castle Logic #########
         //println!("######################################## {:b}", board.casling);
-        let can_castle = board.casling & 0b0000_1111 != 0;
         let not_check = board.check_real == 0;
+        let can_castle = (board.casling & 0b0000_1111 != 0) && not_check;
 
         if can_castle {
             match board.turn {
@@ -372,8 +378,7 @@ impl Engine {
             }
 
             moves = moves
-                | (self.pawn_attacks[PieceColor::Black as usize][sq]
-                & (board.pieces[PieceColor::White as usize] | en_pass));
+                | (self.pawn_attacks[PieceColor::Black as usize][sq]  & (board.pieces[PieceColor::White as usize] | en_pass));
         }
 
         //
@@ -524,9 +529,9 @@ impl Engine {
     }
     //move fuction that return a new board after that move
 
-    pub fn gen_init_casling_info(&self, board: &Board) -> (u8, [u64; 4]) {
+    pub fn gen_init_casling_info(&self, board: &Board, opp: PieceColor) -> (u8, [u64; 4]) {
 
-        let posable = board.pieces[!board.turn];
+        let posable = board.pieces[opp];
         let posable_pos = board_serialize(posable);
 
         let mut casling = 0b1111_0000 | board.casling;
@@ -535,28 +540,29 @@ impl Engine {
         for pos in posable_pos {
             let (pc, pt) = board.lookup(pos);
             let (_, att) = match pt {
-                PieceType::Pawn => (0, self.pawn_attacks[!board.turn as usize][pos]),
-                PieceType::Knight => self.gen_knight_moves(&board, pos, !board.turn),
-                PieceType::Bishop => self.gen_bishop_moves(&board, pos, board.pieces[!board.turn]),
-                PieceType::Rook => self.gen_rook_moves(&board, pos, board.pieces[!board.turn]),
-                PieceType::Queen => self.gen_queen_moves(&board, pos, board.pieces[!board.turn]),
-                PieceType::King => self.gen_king_moves(&board, pos, !board.turn),
+                PieceType::Pawn => (0, self.pawn_attacks[opp as usize][pos]),
+                PieceType::Knight => self.gen_knight_moves(&board, pos, opp),
+                PieceType::Bishop => self.gen_bishop_moves(&board, pos, board.pieces[opp]),
+                PieceType::Rook => self.gen_rook_moves(&board, pos, board.pieces[opp]),
+                PieceType::Queen => self.gen_queen_moves(&board, pos, board.pieces[opp]),
+                PieceType::King => self.gen_king_moves(&board, pos, opp),
                 PieceType::Empty => panic!("Empty can not check"),
             };
 
-            let hit_rank = match !board.turn {
+            let hit_rank = match opp {
                 PieceColor::White => att & 0x6e00000000000000 != 0 && board.casling & 0b0011 != 0,
                 PieceColor::Black => att & 0x6e != 0 && board.casling & 0b1100 != 0,
             };
 
             if hit_rank {
-
                 //Find Square
                 if att & 0x6000000000000000 != 0 && casling & 0b0001 != 0 {//Black King Side
+                    println!("BK");
                     casling &= 0b1110_1111;
                     casling_attacks[0] |= (1 << pos);
                 }
                 if att & 0xc00000000000000 != 0 && casling & 0b0010 != 0 {//Black Queen Side
+                    println!("KQ");
                     casling &= 0b1101_1111;
                     casling_attacks[1] |= (1 << pos);
                 }
@@ -572,7 +578,7 @@ impl Engine {
             }
         }
 
-        //println!("{:b}", casling);
+        //println!("C: {:b}", casling);
 
         if board.occupied & 0xe00000000000000 != 0 {
             casling &= 0b1101_1111;
@@ -586,6 +592,8 @@ impl Engine {
         if board.occupied & 0x60 != 0 {
             casling &= 0b1011_1111;
         }
+
+        //println!("CC: {:b}", casling);
 
         //println!("{:b}", casling);
 

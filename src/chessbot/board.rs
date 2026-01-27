@@ -186,7 +186,7 @@ impl Board {
             } else {
                 PieceColor::Black
             },
-            casling: 0b0000_0000 | casling,
+            casling: 0b1111_0000 | casling,
             casling_attacks: [0; 4],
             check_real: 0,
             check_full: 0,
@@ -197,14 +197,22 @@ impl Board {
             pieces: [wp | wb | wn | wr | wq | wk, bp | bb | bn | br | bq | bk],
         };
 
-        let (casl, casl_att) = engine.gen_init_casling_info(&new_board);
+        let (casl, casl_att) = engine.gen_init_casling_info(&new_board, PieceColor::White);
 
-        new_board.casling |= casl;
-        new_board.casling_attacks = casl_att;
+        new_board.casling &= casl;
+        new_board.casling_attacks[0] = casl_att[0];
+        new_board.casling_attacks[1] = casl_att[1];
+
+        let (casl, casl_att) = engine.gen_init_casling_info(&new_board, PieceColor::Black);
+
+        new_board.casling &= casl;
+        new_board.casling_attacks[2] = casl_att[2];
+        new_board.casling_attacks[3] = casl_att[3];
 
         let king_board = new_board.kings[new_board.turn];
         if (king_board != 0) {
             let king_pos = board_serialize(king_board);
+
             let (cr, cf) = engine.cal_check(&new_board, king_pos[0], !new_board.turn);
 
             new_board.check_real = cr;
@@ -313,6 +321,18 @@ impl Board {
             //white = 11
         }
 
+        if (new_board.casling & 0b0000_1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && old_pt == PieceType::Rook {
+            if to == 0 {
+                new_board.casling &= 0b0111_0111;
+            } else if to == 7 {
+                new_board.casling &= 0b1011_1011;
+            } else if to == 56 {
+                new_board.casling &= 0b1101_1101;
+            } else if to == 63 {
+                new_board.casling &= 0b1110_1110;
+            }
+        }
+
         //Remove Opps piece from to pos
         new_board.remove_piece(to, &old_pt, old_pc);
         //Remove from pos piece
@@ -325,6 +345,33 @@ impl Board {
         new_board.next_turn();
 
         return new_board;
+    }
+
+    pub fn move_lan(&self, engine: &Engine, str: &str) -> Board {
+
+        let from = Board::lan_to_pos(&str[0..2]);
+        let to = Board::lan_to_pos(&str[2..4]);
+
+        let mut new_board = self.move_piece(to, from);
+
+        let (casl, casl_att) = engine.gen_init_casling_info(&new_board, !new_board.turn);
+
+        new_board.casling = casl;
+        new_board.casling_attacks = casl_att;
+
+        let king_board = new_board.kings[new_board.turn];
+        if (king_board != 0) {
+            let king_pos = board_serialize(king_board);
+
+            let (cr, cf) = engine.cal_check(&new_board, king_pos[0], !new_board.turn);
+
+            new_board.check_real = cr;
+            new_board.check_full = cf;
+        }
+
+        print_bitboard(new_board.casling_attacks[2]);
+
+        new_board
     }
 
     fn en_passant_check(&mut self, to: usize, from: usize, pt: &PieceType) {
@@ -384,6 +431,8 @@ impl Board {
     }
 
     pub fn recalc_board(&mut self) {
+
+
         let white_pieces = self.pawns[PieceColor::White]
             | self.bishops[PieceColor::White]
             | self.knights[PieceColor::White]
@@ -406,6 +455,18 @@ impl Board {
 
         let (pc, pt) = new_board.lookup(from);
         let (old_pc, old_pt) = new_board.lookup(to);
+
+        if (new_board.casling & 0b0000_1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && old_pt == PieceType::Rook {
+            if to == 0 {
+                new_board.casling &= 0b0111_0111;
+            } else if to == 7 {
+                new_board.casling &= 0b1011_1011;
+            } else if to == 56 {
+                new_board.casling &= 0b1101_1101;
+            } else if to == 63 {
+                new_board.casling &= 0b1110_1110;
+            }
+        }
 
         new_board.next_turn();
         //Remove old pawn
