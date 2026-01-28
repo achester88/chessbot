@@ -4,8 +4,7 @@
  */
 
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
-use std::path::Path;
+use std::io::{BufRead, BufReader};
 use std::env;
 use std::process::ExitCode;
 use std::time::Instant;
@@ -36,11 +35,11 @@ fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
     let moves = eng.gen_moves(board);
     //println!("moves count: {:?}", moves);
     for m in moves {
-        let (_, _, new_board) = m;
+        let (_, _, new_board, _) = m;
         count += perft(eng, new_board, depth - 1);
     }
 
-    return count;
+    count
 }
 
 fn main()-> ExitCode {
@@ -49,7 +48,6 @@ fn main()-> ExitCode {
 
     let depth_limit = args[2].parse().unwrap();
 
-    let file_path = Path::new(r"");
     let file = File::open(args[1].clone()).unwrap();
     let reader = BufReader::new(file);
 
@@ -86,7 +84,7 @@ fn main()-> ExitCode {
     while c < tests.len() {
         let test = &tests[c];
         let test_start = Instant::now();
-        println!("({}/{}) FEN: |{}|", (c+1), tests.len(), test.fen);
+        println!("({}/{}) FEN: |{}|", c+1, tests.len(), test.fen);
 
         let board = Board::new(&test.fen, &engine);
         let mut i = 0;
@@ -150,7 +148,7 @@ fn main()-> ExitCode {
     println!("\n-----------------------------------------------------");
 
 
-    if (results[2] == 0) {
+    if results[2] == 0 {
         ExitCode::SUCCESS
     } else {
         ExitCode::FAILURE
@@ -174,11 +172,11 @@ fn calc_over_under(res: usize, expt: usize) -> f32 {
 
 fn check_outcome(res: usize, expt: usize) -> Status {
     if res == expt {
-        return Status::Passed;
+        Status::Passed
     } else if res < expt {
-        return Status::Acceptable;
+        Status::Acceptable
     } else {
-        return Status::Failed;
+        Status::Failed
     }
 }
 

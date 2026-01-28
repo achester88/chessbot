@@ -10,7 +10,7 @@ pub enum PieceColor {
     Black,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PieceType {
     Pawn,
     Bishop,
@@ -368,7 +368,7 @@ impl Board {
             new_board.check_real = cr;
             new_board.check_full = cf;
         }
-        
+
         new_board
     }
 
@@ -392,7 +392,8 @@ impl Board {
             if to > 16 && (to - 16) == from && from > 7 && from < 16 {
                 //white
                 self.en_passant = (to as u8) - 8; //south_one
-            } else if to > 15 && (to - 16) == from && from > 47 && from < 56 {
+            } else if to < 48 && (to + 16) == from && from > 47 && from < 56 {
+                //println!("NEW EN");
                 //black
                 self.en_passant = (to as u8) + 8; //north_one
             } else {
@@ -482,12 +483,18 @@ impl Board {
 
         //Check for check
         let mut out: Vec<Move> = vec![];
-
+        //TODO ADD PROMO PIECE INFO TO MOVE
         //In case other piece is removed all case need to be run
         for i in 0..4 {
             new_boards[i].recalc_board();
-            out.push((from, to, new_boards[i]));
+
         }
+
+        out.push((from, to, new_boards[0], Some(PieceType::Knight) ));
+        out.push((from, to, new_boards[1], Some(PieceType::Bishop) ));
+        out.push((from, to, new_boards[2], Some(PieceType::Rook) ));
+        out.push((from, to, new_boards[3], Some(PieceType::Queen) ));
+
 
         return out;
     }
@@ -583,7 +590,7 @@ impl Board {
     }
 
     pub fn move_to_lan(cur_move: &Move) -> String {
-        let (from, to, new_board) = cur_move;
+        let (from, to, new_board, promo_type) = cur_move;
 
         if to == &80 {
             return match !new_board.turn {
@@ -592,12 +599,25 @@ impl Board {
             }
         } else if to == &88 {
             return match !new_board.turn {
-                PieceColor::White => String::from("e1b1"),
-                PieceColor::Black => String::from("e8b8")
+                PieceColor::White => String::from("e1c1"),
+                PieceColor::Black => String::from("e8c8")
             }
         }
 
-        [Board::pos_to_lan(*from), Board::pos_to_lan(*to)].join("")
+        let promo_to = match promo_type {
+            Some(x) => {
+                match x {
+                    PieceType::Queen => String::from("q"),
+                    PieceType::Rook => String::from("r"),
+                    PieceType::Bishop => String::from("b"),
+                    PieceType::Knight => String::from("n"),
+                    _ => String::from(""),
+                }
+            },
+            None => String::from("")
+        };
+
+        [Board::pos_to_lan(*from), Board::pos_to_lan(*to), promo_to].join("")
     }
 
     pub fn print_board(&self) {

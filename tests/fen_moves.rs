@@ -204,7 +204,7 @@ fn king_to_check() {
     checked_board.check_real = 0x10000000000000;//check_real;
     checked_board.check_full = 0x2000000000000000;
 
-    fen_moves.push((44, 52, checked_board));
+    fen_moves.push((44, 52, checked_board, None));
 
     fen_moves.append(&mut fen_arr(03, vec!(
         (02, "5k2/8/4P3/8/8/8/8/2K5 b - - 1 1"),
@@ -233,7 +233,7 @@ fn king_to_check_next() {
     checked_board.check_real = 0x10000000000000;//check_real;
     checked_board.check_full = 0x2000000000000000;
 
-    fen_moves.push((44, 52, checked_board));
+    fen_moves.push((44, 52, checked_board, None));
 
     fen_moves.append(&mut fen_arr(03, vec!(
         (02, "5k2/8/4P3/8/8/8/8/2K5 b - - 1 1"),
@@ -246,7 +246,7 @@ fn king_to_check_next() {
 
     assert_fen_arr(&mut moves, &mut fen_moves);
 
-    let (_, _, next_board) = moves[0];
+    let (_, _, next_board, _) = moves[0];
     println!("###########################");
     next_board.print_board();
 
@@ -295,7 +295,7 @@ fn king_castling() {
     checked_board.check_real = 0xe000000000000000;//check_real;
     checked_board.check_full = 0x7f80808080808080;
 
-    fen_moves.push((7, 63, checked_board));
+    fen_moves.push((7, 63, checked_board, None));
 
     fen_moves.append(&mut fen_arr(04, vec!(
         (3, "4k3/8/8/8/8/8/8/3K3R b - - 1 1"),
@@ -345,7 +345,7 @@ fn black_king_castling() {
 fn queenside_blocked_castling() {
     let eng = Engine::new();
     let board = Board::new("r3k3/1P6/P7/8/8/8/8/4K3 w q - 0 1", &eng);
-    let (_, _,start) = eng.gen_moves(board)[8];
+    let (_, _,start, _) = eng.gen_moves(board)[8];
 
     let mut fen_moves: Vec<Move>;
 
@@ -377,7 +377,7 @@ fn queenside_blocked_castling() {
 fn discovered_check() {
     let eng = Engine::new();
     let board = Board::new("8/1k6/8/8/8/5P2/6B1/8 w - - 0 1", &eng);
-    let (_, _, start) = eng.gen_moves(board)[3];
+    let (_, _, start, _) = eng.gen_moves(board)[3];
 
     let mut moves = eng.gen_moves(start);
 
@@ -400,7 +400,7 @@ fn king_capture_check() {
     let eng = Engine::new();
     let board = Board::new("8/1k6/8/8/8/2K5/6r1/8 b - - 1 1", &eng);
 
-    let (_, _, start) = eng.gen_moves(board)[3];
+    let (_, _, start, _) = eng.gen_moves(board)[3];
 
     let mut moves = eng.gen_moves(start);
 
@@ -423,7 +423,7 @@ fn king_capture_double_check() {
     let eng = Engine::new();
     let board = Board::new("8/1k6/8/5q2/8/2K5/2r5/8 b - - 1 1", &eng);
 
-    let (_, _, start) = eng.gen_moves(board)[16];
+    let (_, _, start, _) = eng.gen_moves(board)[16];
 
     let mut moves = eng.gen_moves(start);
 
@@ -442,7 +442,7 @@ fn black_promotion_check() {
     let eng = Engine::new();
     let board = Board::new("8/1P6/3k4/8/8/7K/8/8 w - - 1 1", &eng);
 
-    let (_, _, start) = eng.gen_moves(board)[3];
+    let (_, _, start, _) = eng.gen_moves(board)[3];
 
     let mut moves = eng.gen_moves(start);
 

@@ -12,7 +12,7 @@ fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
 
     let moves = eng.gen_moves(board);
     //println!("moves count: {:?}", moves);
-    for (from, to, new_board) in moves {
+    for (from, to, new_board, _) in moves {
         //new_board.print_board();
         //println!("{}", Board::move_to_lan(&(from, to, new_board)));
         count += perft(&eng, new_board, depth - 1);
@@ -21,7 +21,7 @@ fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
     return count;
 }
 
-fn perft_from_string(fen: &str, list:  String) -> bool {
+fn perft_from_string(fen: &str, list:  String, depth: usize) -> bool {
 
     let eng = Engine::new();
     let board = Board::new(fen, &eng);
@@ -42,10 +42,10 @@ fn perft_from_string(fen: &str, list:  String) -> bool {
     let moves = eng.gen_moves(board);
     //println!("moves count: {:?}", moves);
     for m in moves {
-        let (from, to, new_board) = m;
+        let (from, to, new_board, _) = m;
         //new_board.print_board();
         //count += perft(&eng, new_board, 1);
-        results.insert(Board::move_to_lan(&m) , perft(&eng, new_board, 1));
+        results.insert(Board::move_to_lan(&m) , perft(&eng, new_board, depth-1));
     }
 
     let mut pass = true;
@@ -277,47 +277,9 @@ fn custom() {
     assert_eq!(count, 567);
 }
 
+
 #[test]
 fn custom_c() {
-    let engine = Engine::new();
-    let board = Board::new("r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1", &engine);
-
-    let new_board = board.move_lan(&engine, "a1b1");
-    let count = perft(&engine, board, 1);
-
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1a1"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1c1"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1d1"), 1), 23);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b2"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b3"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b4"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b5"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b6"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b7"), 1), 23);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b8"), 1), 4);
-
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1f1"), 1), 23);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1g1"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h2"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h3"), 1), 24);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h4"), 1), 23);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h5"), 1), 22);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h6"), 1), 21);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h7"), 1), 17);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h8"), 1), 3);
-
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1d1"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1f1"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1d2"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1e2"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1f2"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1g1"), 1), 23);
-    //let (_, _, cm) = board.castle(88);
-    //assert_eq!(perft(&engine, cm, 1), 22);
-}
-
-#[test]
-fn custom_c_1() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1", &engine);
 
@@ -325,7 +287,7 @@ fn custom_c_1() {
 
     println!("{:?}", moves[0]);
 
-    let (from, to, initial_board) = moves[0];
+    let (from, to, initial_board, _) = moves[0];
 
     println!("---------------------------------------------------------");
     let fin_moves = engine.gen_moves(initial_board);
@@ -346,33 +308,128 @@ fn custom_c_1() {
 #[test]
 fn full_hash() {
 
-    let input = String::from("b1a1: 26
-b1c1: 25
-b1d1: 23
-b1b2: 26
-b1b3: 26
-b1b4: 26
-b1b5: 26
-b1b6: 26
-b1b7: 23
-b1b8: 4
-h1f1: 23
-h1g1: 25
-h1h2: 25
-h1h3: 24
-h1h4: 23
-h1h5: 22
-h1h6: 21
-h1h7: 17
-h1h8: 3
-e1d1: 26
-e1f1: 26
-e1d2: 26
-e1e2: 26
-e1f2: 26
-e1g1: 23");
+    let input = String::from("c4c5: 1409
+d2d4: 1643
+f3d4: 1687
+b4c5: 1352
+f1f2: 1623
+g1h1: 1753");
 
-    assert_eq!(perft_from_string("r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1", input), true);
+    assert_eq!(perft_from_string("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", input, 3), true);
+}
+
+#[test]
+fn full_hash_down() {
+
+    let input = String::from("c7c6: 41
+d7d6: 38
+c7c5: 39
+d7d5: 42
+b2a1q: 39
+b2a1r: 39
+b2a1b: 39
+b2a1n: 39
+b2b1q: 39
+b2b1r: 39
+b2b1b: 39
+b2b1n: 39
+g7h6: 36
+a5b3: 40
+a5c4: 39
+a5c6: 41
+f6e4: 38
+f6g4: 38
+f6d5: 42
+f6h5: 40
+f6g8: 40
+b6d4: 4
+b6c5: 38
+b6a7: 41
+g6e4: 39
+g6f5: 41
+g6h5: 40
+a8a7: 40
+a8b8: 48
+a8c8: 44
+a8d8: 44
+h8f8: 40
+h8g8: 40
+a3a2: 41
+a3b3: 41
+a3c3: 39
+a3d3: 41
+a3e3: 2
+a3f3: 38
+a3a4: 40
+a3b4: 32
+e8c8: 44
+e8d8: 40");
+
+    assert_eq!(perft_from_string("r3k2r/Pppp1ppp/1b3nbN/nP6/BBPPP3/q4N2/Pp4PP/R2Q1RK1 b kq - 0 1", input, 2), true);
+}
+
+#[test]
+fn full_hash_down_c() {
+    let engine = Engine::new();
+    let board = Board::new("r3k2r/Pppp1ppp/1b3nbN/nP6/BBPPP3/q4N2/Pp4PP/R2Q1RK1 b kq - 0 1", &engine);
+    let count = perft(&engine, board, 2);
+
+    assert_eq!(count, 1643);
+}
+
+#[test]
+fn full_hash_1() {
+
+    let input = String::from("g2g3: 1
+h2h3: 1
+d4d5: 1
+e4e5: 1
+g2g4: 1
+h2h4: 1
+d4c5: 1
+b5c6: 1
+f3e1: 1
+f3d2: 1
+f3h4: 1
+f3e5: 1
+f3g5: 1
+h6g4: 1
+h6f5: 1
+h6f7: 1
+h6g8: 1
+a4c2: 1
+a4b3: 1
+b4e1: 1
+b4d2: 1
+b4a3: 1
+b4c3: 1
+b4a5: 1
+b4c5: 1
+a1b1: 1
+a1c1: 1
+f1e1: 1
+f1f2: 1
+d1b1: 1
+d1c1: 1
+d1e1: 1
+d1c2: 1
+d1d2: 1
+d1e2: 1
+d1b3: 1
+d1d3: 1
+g1h1: 1
+g1f2: 1");
+
+    assert_eq!(perft_from_string("r3k2r/Pp1p1ppp/1b3nbN/nPp5/BBPPP3/q4N2/Pp4PP/R2Q1RK1 w kq c6 0 1", input, 1), true);
+}
+
+#[test]
+fn full_hash_1_c() {
+    let engine = Engine::new();
+    let board = Board::new("r3k2r/Pp1p1ppp/1b3nbN/nPp5/BBPPP3/q4N2/Pp4PP/R2Q1RK1 w kq c6 0 1", &engine);
+    let count = perft(&engine, board, 1);
+
+    assert_eq!(count, 39);
 }
 
 //Rook Capture, respawn when calsing

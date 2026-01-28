@@ -4,7 +4,7 @@ use board::*;
 use utils::*;
 
 //          (from,  to,    new board)
-pub type Move = (usize, usize, Board);
+pub type Move = (usize, usize, Board, Option<PieceType>);
 
 #[derive(Debug, Clone, Copy)]
 pub enum Dir {
@@ -100,7 +100,7 @@ impl Engine {
                         let mut new_board = board.move_piece(to, from);
                         new_board.check_real = 0;
                         new_board.check_full = 0;
-                        all_moves.push((from, to, new_board));
+                        all_moves.push((from, to, new_board, None));
 
                     }
                 }
@@ -134,7 +134,7 @@ impl Engine {
                             new_board.casling_attacks[1] |= (1 << 3);
                         }
 
-                        all_moves.push((88, 88, new_board));
+                        all_moves.push((88, 88, new_board, None));
 
                     }
                     if board.casling & 0b0100_0100 == 0b0100_0100 {
@@ -147,7 +147,7 @@ impl Engine {
                             new_board.casling_attacks[0] |= (1 << 5);
                         }
 
-                        all_moves.push((80, 80, new_board));
+                        all_moves.push((80, 80, new_board, None));
                     }
                 },
                 PieceColor::Black => {
@@ -161,7 +161,7 @@ impl Engine {
                             new_board.casling_attacks[3] |= (1 << 59);
                         }
 
-                        all_moves.push((88, 88, new_board));
+                        all_moves.push((88, 88, new_board, None));
                     }
                     if board.casling & 0b0001_0001 == 0b0001_0001 { //kingside
                         let mut new_board = board.castle(80);
@@ -173,7 +173,7 @@ impl Engine {
                             new_board.casling_attacks[2] |= (1 << 61);
                         }
 
-                        all_moves.push((80, 80, new_board));
+                        all_moves.push((80, 80, new_board, None));
                     }
                 }
             }
@@ -270,7 +270,7 @@ impl Engine {
 
                     }
 
-                    all_moves.push((from, to, new_board));
+                    all_moves.push((from, to, new_board, None));
                 }
 
 
@@ -309,7 +309,7 @@ impl Engine {
         }
 
         //for testing
-        for (_, _, all_board) in &all_moves {
+        for (_, _, all_board, _) in &all_moves {
             //all_board.print_board();
         }
 
@@ -396,10 +396,13 @@ impl Engine {
             if board.en_passant != 65 {
                 en_pass = 1 << board.en_passant;
             }
+
+            if sq == 33 {
+                //print_bitboard_pos(self.pawn_attacks[PieceColor::White as usize][sq], sq);
+                //print_bitboard_pos(en_pass, sq);
+            }
             
-            moves = moves
-                | (self.pawn_attacks[PieceColor::White as usize][sq]
-                & (board.pieces[PieceColor::Black as usize] | en_pass));
+            moves = moves | (self.pawn_attacks[PieceColor::White as usize][sq] & (board.pieces[PieceColor::Black as usize] | en_pass));
 
         } else { //Black
             moves = moves | (postshift::sout_one(piece) & !board.occupied);
@@ -413,8 +416,7 @@ impl Engine {
                 en_pass = 1 << board.en_passant;
             }
 
-            moves = moves
-                | (self.pawn_attacks[PieceColor::Black as usize][sq]  & (board.pieces[PieceColor::White as usize] | en_pass));
+            moves = moves | (self.pawn_attacks[PieceColor::Black as usize][sq]  & (board.pieces[PieceColor::White as usize] | en_pass));
         }
 
         //

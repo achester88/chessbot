@@ -26,7 +26,7 @@ fn main() {
     let eng = Engine::new(); //replace with ref or something :(
 
 
-    let best_move = Arc::new(Mutex::new((0, 0, Board::new("8/8/8/8/8/8/8/8 w - - 0 1", &eng))));
+    let best_move = Arc::new(Mutex::new((0, 0, Board::new("8/8/8/8/8/8/8/8 w - - 0 1", &eng), None)));
 
     //TODO lock best move on search start and release after stop CMD
 
@@ -173,12 +173,8 @@ fn main() {
 
                     //shutdown.store(true, Ordering::Relaxed);
                     let best_move_lock = best_move.lock().unwrap();
-                    let (from, to, board) = *best_move_lock;
-                    match (from, to) {
-                        (80, 80) => println!("bestmove O-O"),
-                        (88, 88) => println!("bestmove O-O-O"),
-                        _ => println!("bestmove {}{}", Board::pos_to_lan(from), Board::pos_to_lan(to))
-                    }
+                    let (from, to, board, promo) = *best_move_lock;
+                    println!("bestmove {}", Board::move_to_lan(&*best_move_lock));
                     interface.current_board = Some(board);
                     finished_calculation.store(false, Ordering::Relaxed);
                     stop_calculation.store(false, Ordering::Relaxed);
