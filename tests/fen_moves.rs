@@ -459,3 +459,42 @@ fn black_promotion_check() {
     println!("Moves: {:?}", eng.gen_moves(board)[3]);
     assert_fen_arr(&mut moves, &mut fen_moves);
 }
+
+#[test]
+fn blocked_castle_att() {
+    let eng = Engine::new();
+    let board = Board::new("8/8/8/2b5/4p3/8/8/4K2R b K - 0 1", &eng);
+
+    let (_, _, start, _) = eng.gen_moves(board)[11];
+
+    let mut moves = eng.gen_moves(start);
+
+    let mut fen_moves = fen_arr(80, vec!(
+        (80, "8/8/8/2b5/8/4p3/8/5RK1 b - - 2 2")
+    ));
+
+    fen_moves[0].2.casling_attacks[2] = 17179869184;
+
+    fen_moves.append(&mut fen_arr(7, vec!(
+        (5, "8/8/8/2b5/8/4p3/8/4KR2 b - - 2 2"),
+        (6, "8/8/8/2b5/8/4p3/8/4K1R1 b - - 2 2"),
+
+        (15, "8/8/8/2b5/8/4p3/7R/4K3 b - - 2 2"),
+        (23, "8/8/8/2b5/8/4p2R/8/4K3 b - - 2 2"),
+        (31, "8/8/8/2b5/7R/4p3/8/4K3 b - - 2 2"),
+        (39, "8/8/8/2b4R/8/4p3/8/4K3 b - - 2 2"),
+        (47, "8/8/7R/2b5/8/4p3/8/4K3 b - - 2 2"),
+        (55, "8/7R/8/2b5/8/4p3/8/4K3 b - - 2 2"),
+        (63, "7R/8/8/2b5/8/4p3/8/4K3 b - - 2 2"),
+    )));
+
+    fen_moves.append(&mut fen_arr(4, vec!(
+        (3, "8/8/8/2b5/8/4p3/8/3K3R b - - 2 2"),
+        (5, "8/8/8/2b5/8/4p3/8/5K1R b - - 2 2"),
+        (12, "8/8/8/2b5/8/4p3/4K3/7R b - - 2 2"),
+    )));
+
+
+    //println!("Moves: {:?}", moves[11]);
+    assert_fen_arr(&mut moves, &mut fen_moves);
+}

@@ -69,6 +69,7 @@ pub struct Board {
     pub turn: PieceColor,
     pub casling: u8,    //white, black | queenside, kingside QKqk
     pub casling_attacks: [u64; 4],
+    pub casling_blocks: [u64; 4],
     pub en_passant: u8, //postion of avilbe en passant
     pub check_real: u64, //TODO USE BOOL AND CAL AS NEEDED
     pub check_full: u64,
@@ -188,6 +189,7 @@ impl Board {
             },
             casling: 0b1111_0000 | casling,
             casling_attacks: [0; 4],
+            casling_blocks: [0; 4],
             check_real: 0,
             check_full: 0,
             en_passant: ep,
@@ -197,17 +199,19 @@ impl Board {
             pieces: [wp | wb | wn | wr | wq | wk, bp | bb | bn | br | bq | bk],
         };
 
-        let (casl, casl_att) = engine.gen_init_casling_info(&new_board, PieceColor::White);
+        let (casl, casl_att, _) = engine.gen_init_casling_info(&new_board, PieceColor::White);
 
         new_board.casling &= casl;
         new_board.casling_attacks[0] = casl_att[0];
         new_board.casling_attacks[1] = casl_att[1];
 
-        let (casl, casl_att) = engine.gen_init_casling_info(&new_board, PieceColor::Black);
+        let (casl, casl_att, blockers) = engine.gen_init_casling_info(&new_board, PieceColor::Black);
 
         new_board.casling &= casl;
         new_board.casling_attacks[2] = casl_att[2];
         new_board.casling_attacks[3] = casl_att[3];
+
+        new_board.casling_blocks = blockers;
 
         let king_board = new_board.kings[new_board.turn];
         if (king_board != 0) {
@@ -354,10 +358,11 @@ impl Board {
 
         let mut new_board = self.move_piece(to, from);
 
-        let (casl, casl_att) = engine.gen_init_casling_info(&new_board, !new_board.turn);
+        let (casl, casl_att, bloc) = engine.gen_init_casling_info(&new_board, !new_board.turn);
 
         new_board.casling = casl;
         new_board.casling_attacks = casl_att;
+        new_board.casling_blocks = bloc;
 
         let king_board = new_board.kings[new_board.turn];
         if (king_board != 0) {
@@ -487,6 +492,7 @@ impl Board {
         //In case other piece is removed all case need to be run
         for i in 0..4 {
             new_boards[i].recalc_board();
+            new_boards[i].en_passant = 65;
 
         }
 
@@ -542,6 +548,8 @@ impl Board {
                 new_board.casling &= 0b1100_1100;
             }
         }
+
+        new_board.en_passant = 65;
 
         new_board.remove_piece(king_from_pos, &PieceType::King, new_board.turn);
         new_board.remove_piece(rook_from_pos, &PieceType::Rook, new_board.turn);
