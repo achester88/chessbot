@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use chessbot::chessbot::board::Board;
 use chessbot::chessbot::engine::Engine;
 
@@ -11,13 +12,71 @@ fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
 
     let moves = eng.gen_moves(board);
     //println!("moves count: {:?}", moves);
-    for m in moves {
-        let (from, to, new_board) = m;
+    for (from, to, new_board) in moves {
         //new_board.print_board();
+        //println!("{}", Board::move_to_lan(&(from, to, new_board)));
         count += perft(&eng, new_board, depth - 1);
     }
 
     return count;
+}
+
+fn perft_from_string(fen: &str, list:  String) -> bool {
+
+    let eng = Engine::new();
+    let board = Board::new(fen, &eng);
+
+    let lines: Vec<&str> = list.split("\n").collect();
+
+    let mut expected: HashMap<String, usize> = HashMap::new();
+    let mut results: HashMap<String, usize> = HashMap::new();
+
+    for line in lines {
+        let parts: Vec<&str> = line.split(": ").collect();
+        //println!("|{} {}|", parts[0], parts[1]);
+        expected.insert(parts[0].to_string(), parts[1].parse::<usize>().unwrap());
+    }
+
+    //let mut count = 0;
+
+    let moves = eng.gen_moves(board);
+    //println!("moves count: {:?}", moves);
+    for m in moves {
+        let (from, to, new_board) = m;
+        //new_board.print_board();
+        //count += perft(&eng, new_board, 1);
+        results.insert(Board::move_to_lan(&m) , perft(&eng, new_board, 1));
+    }
+
+    let mut pass = true;
+
+    for key in results.keys() {
+        let result = results.get(key).unwrap();
+
+        match expected.get(key) {
+            Some(x) => {
+                if result == x {
+                    println!("{} | ==", key);
+                } else {
+                    pass = false;
+                    println!("{} | E: {}, R: {}", key, x, result);
+                }
+                expected.remove(key);
+            },
+            None => {
+                pass = false;
+                println!("{} | Additional", key);
+            }
+        }
+
+    }
+
+    for key in expected.keys() {
+        pass = false;
+        print!("{} | Missing ", key);
+    }
+
+    return pass;
 }
 
 #[test]
@@ -212,59 +271,108 @@ fn p6_four() {
 #[test]
 fn custom() {
     let engine = Engine::new();
-    let board = Board::new("r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1", &engine);
+    let board = Board::new("r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1", &engine);
     let count = perft(&engine, board, 2);
 
-    assert_eq!(count, 547);
+    assert_eq!(count, 567);
 }
 
 #[test]
 fn custom_c() {
     let engine = Engine::new();
-    let board = Board::new("r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1", &engine);
+    let board = Board::new("r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1", &engine);
 
     let new_board = board.move_lan(&engine, "a1b1");
     let count = perft(&engine, board, 1);
 
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1b1"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1c1"), 1), 24);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1d1"), 1), 22);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a2"), 1), 24);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a3"), 1), 23);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a4"), 1), 22);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a5"), 1), 21);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a6"), 1), 20);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a7"), 1), 16);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "a1a8"), 1), 3);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1a1"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1c1"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1d1"), 1), 23);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b2"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b3"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b4"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b5"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b6"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b7"), 1), 23);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "b1b8"), 1), 4);
 
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1f1"), 1), 23);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1h1"), 1), 26);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g2"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g3"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g4"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g5"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g6"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g7"), 1), 22);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "g1g8"), 1), 4);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1f1"), 1), 23);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1g1"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h2"), 1), 25);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h3"), 1), 24);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h4"), 1), 23);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h5"), 1), 22);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h6"), 1), 21);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h7"), 1), 17);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "h1h8"), 1), 3);
 
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1d1"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1f1"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1d2"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1e2"), 1), 25);
-    assert_eq!(perft(&engine, board.move_lan(&engine, "e1f2"), 1), 25);
-    let (_, _, cm) = board.castle(88);
-    assert_eq!(perft(&engine, cm, 1), 22);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1d1"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1f1"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1d2"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1e2"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1f2"), 1), 26);
+    assert_eq!(perft(&engine, board.move_lan(&engine, "e1g1"), 1), 23);
+    //let (_, _, cm) = board.castle(88);
+    //assert_eq!(perft(&engine, cm, 1), 22);
 }
 
 #[test]
 fn custom_c_1() {
     let engine = Engine::new();
-    let board = Board::new("r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1", &engine);
+    let board = Board::new("r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1", &engine);
+
+    let moves = engine.gen_moves(board);
+
+    println!("{:?}", moves[0]);
+
+    let (from, to, initial_board) = moves[0];
+
+    println!("---------------------------------------------------------");
+    let fin_moves = engine.gen_moves(initial_board);
+    println!("---------------------------------------------------------");
+
+    for m in &fin_moves {
+        println!("---{}---", Board::move_to_lan(m));
+        m.2.print_board();
+        println!("\n\n\n\n");
+    }
+
     println!("-----------");
-    let (_, _, cm) = board.castle(88);
-    assert_eq!(perft(&engine, cm, 1), 22);
+    assert_eq!(fin_moves.len(), 23);
 
 
+}
+
+#[test]
+fn full_hash() {
+
+    let input = String::from("b1a1: 26
+b1c1: 25
+b1d1: 23
+b1b2: 26
+b1b3: 26
+b1b4: 26
+b1b5: 26
+b1b6: 26
+b1b7: 23
+b1b8: 4
+h1f1: 23
+h1g1: 25
+h1h2: 25
+h1h3: 24
+h1h4: 23
+h1h5: 22
+h1h6: 21
+h1h7: 17
+h1h8: 3
+e1d1: 26
+e1f1: 26
+e1d2: 26
+e1e2: 26
+e1f2: 26
+e1g1: 23");
+
+    assert_eq!(perft_from_string("r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1", input), true);
 }
 
 //Rook Capture, respawn when calsing

@@ -119,10 +119,10 @@ impl UciInterface {
     fn read_move(&mut self, str: &str) {
         println!("info string read_move");
         if str == "O-O" {
-            let (_, _, board) = self.current_board.unwrap().castle(80);
+            let board = self.current_board.unwrap().castle(80);
             self.current_board = Some(board);
         } else if str == "O-O-O" {
-            let (_, _, board) = self.current_board.unwrap().castle(88);
+            let board = self.current_board.unwrap().castle(88);
             self.current_board = Some(board);
         } else {
             let from = Board::lan_to_pos(&str[0..2]);

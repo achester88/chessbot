@@ -368,9 +368,7 @@ impl Board {
             new_board.check_real = cr;
             new_board.check_full = cf;
         }
-
-        print_bitboard(new_board.casling_attacks[2]);
-
+        
         new_board
     }
 
@@ -494,7 +492,7 @@ impl Board {
         return out;
     }
 
-    pub fn castle(&self, code: u8) -> Move {
+    pub fn castle(&self, code: u8) -> Board {
         let mut new_board = self.clone();
 
         let king_from_pos: usize;
@@ -518,7 +516,7 @@ impl Board {
                     king_to_pos = 6;
                 }
 
-                new_board.casling &= 0b0011;
+                new_board.casling &= 0b0011_0011;
             },
             PieceColor::Black => {
                 king_from_pos = 60;
@@ -534,7 +532,7 @@ impl Board {
                     king_to_pos = 62;
                 }
 
-                new_board.casling &= 0b1100;
+                new_board.casling &= 0b1100_1100;
             }
         }
 
@@ -548,7 +546,7 @@ impl Board {
 
         new_board.next_turn();
 
-        return (code as usize, code as usize, new_board);
+        return new_board;
     }
 
     fn next_turn(&mut self)  {
@@ -582,6 +580,24 @@ impl Board {
         out.push_str(&n);
 
         out
+    }
+
+    pub fn move_to_lan(cur_move: &Move) -> String {
+        let (from, to, new_board) = cur_move;
+
+        if to == &80 {
+            return match !new_board.turn {
+                PieceColor::White => String::from("e1g1"),
+                PieceColor::Black => String::from("e8g8")
+            }
+        } else if to == &88 {
+            return match !new_board.turn {
+                PieceColor::White => String::from("e1b1"),
+                PieceColor::Black => String::from("e8b8")
+            }
+        }
+
+        [Board::pos_to_lan(*from), Board::pos_to_lan(*to)].join("")
     }
 
     pub fn print_board(&self) {

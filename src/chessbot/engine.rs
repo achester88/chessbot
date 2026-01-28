@@ -43,6 +43,8 @@ impl Engine {
         //println!("----------------------------------");
         //println!("\n");
 
+        //println!("CI: {:08b}", board.casling);
+
         //if only kings or missing king, game over -> no moves
 
         //if (board.occupied & !(board.kings[PieceColor::Black] | board.kings[PieceColor::White])) == 0 ||  board.kings[PieceColor::Black] == 0 ||  board.kings[PieceColor::White] == 0 {
@@ -123,21 +125,55 @@ impl Engine {
             match board.turn {
                 PieceColor::White => {
                     if board.casling & 0b1000_1000 == 0b1000_1000 {//board.casling & 0b0100 != 0 && board.casling & 0b0100_0000 != 0 { //queenside
-                        //let to = board_serialize(moves)[0];
-                        //let new_board = board.promote(from, to);
-                        all_moves.push(board.castle(88));
+                        let mut new_board = board.castle(88);
+
+                        let (_, att) = self.gen_rook_moves(&board, 3, board.pieces[board.turn]);
+
+                        if att & 0xc00000000000000 != 0 && new_board.casling & 0b0010 != 0{
+                            new_board.casling &= 0b1101_1111;
+                            new_board.casling_attacks[1] |= (1 << 3);
+                        }
+
+                        all_moves.push((88, 88, new_board));
+
                     }
-                    if board.casling & 0b0100_0100 == 0b0100_0100 { //kingside O-O 80
-                        //80
-                        all_moves.push(board.castle(80));
+                    if board.casling & 0b0100_0100 == 0b0100_0100 {
+                        let mut new_board = board.castle(80);
+
+                        let (_, att) = self.gen_rook_moves(&board, 5, board.pieces[board.turn]);
+
+                        if att & 0x6000000000000000 != 0 && new_board.casling & 0b0001 != 0{
+                            new_board.casling &= 0b1110_1111;
+                            new_board.casling_attacks[0] |= (1 << 5);
+                        }
+
+                        all_moves.push((80, 80, new_board));
                     }
                 },
                 PieceColor::Black => {
                     if board.casling & 0b0010_0010 == 0b0010_0010 { //queenside
-                        all_moves.push(board.castle(88));
+                        let mut new_board = board.castle(88);
+
+                        let (_, att) = self.gen_rook_moves(&board, 59, board.pieces[board.turn]);
+
+                        if att & 0xc != 0 && new_board.casling & 0b1000 != 0{//Black Queen Side
+                            new_board.casling &= 0b0111_1111;
+                            new_board.casling_attacks[3] |= (1 << 59);
+                        }
+
+                        all_moves.push((88, 88, new_board));
                     }
                     if board.casling & 0b0001_0001 == 0b0001_0001 { //kingside
-                        all_moves.push(board.castle(80));
+                        let mut new_board = board.castle(80);
+
+                        let (_, att) = self.gen_rook_moves(&board, 61, board.pieces[board.turn]);
+
+                        if att & 0x60 != 0 && new_board.casling & 0b0100 != 0 {//Black King Side
+                            new_board.casling &= 0b1011_1111;
+                            new_board.casling_attacks[2] |= (1 << 61);
+                        }
+
+                        all_moves.push((80, 80, new_board));
                     }
                 }
             }
@@ -557,12 +593,12 @@ impl Engine {
             if hit_rank {
                 //Find Square
                 if att & 0x6000000000000000 != 0 && casling & 0b0001 != 0 {//Black King Side
-                    println!("BK");
+                    //println!("BK");
                     casling &= 0b1110_1111;
                     casling_attacks[0] |= (1 << pos);
                 }
                 if att & 0xc00000000000000 != 0 && casling & 0b0010 != 0 {//Black Queen Side
-                    println!("KQ");
+                    //println!("KQ");
                     casling &= 0b1101_1111;
                     casling_attacks[1] |= (1 << pos);
                 }
