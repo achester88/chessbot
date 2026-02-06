@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use std::thread;
-use crate::chessbot::board::Board;
-use crate::chessbot::engine::Engine;
+use crate::chicory::board::Board;
+use crate::chicory::engine::Engine;
 
 pub fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
     //println!("--------------------[ Perft depth: {} ]---------------------", depth);

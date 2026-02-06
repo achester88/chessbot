@@ -1,7 +1,7 @@
 use std::process::Command;
-use crate::chessbot::board::Board;
-use crate::chessbot::engine::Engine;
-use crate::chessbot::uci_interface::Cmd::Set;
+use crate::chicory::board::Board;
+use crate::chicory::engine::Engine;
+use crate::chicory::uci_interface::Cmd::Set;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Cmd {

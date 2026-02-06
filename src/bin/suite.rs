@@ -9,9 +9,9 @@ use std::{env, thread};
 use std::process::ExitCode;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
-use chessbot::chessbot::board::Board;
-use chessbot::chessbot::engine::Engine;
-use chessbot::chessbot::perft::multi_perft;
+use chicory::chessbot::board::Board;
+use chicory::chessbot::engine::Engine;
+use chicory::chessbot::perft::multi_perft;
 
 #[derive(Debug, Clone)]
 struct LineInfo {

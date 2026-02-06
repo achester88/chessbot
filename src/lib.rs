@@ -1,1 +1,1 @@
-pub mod chessbot;
+pub mod chicory;

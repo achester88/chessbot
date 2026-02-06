@@ -1,8 +1,8 @@
 use super::bitboard::{print_bitboard, print_bitboard_pos};
 use core::ops::{Index, IndexMut, Not};
-use crate::chessbot::bitboard::board_serialize;
-use crate::chessbot::engine::Move;
-use crate::chessbot::engine::Engine;
+use crate::chicory::bitboard::board_serialize;
+use crate::chicory::engine::Move;
+use crate::chicory::engine::Engine;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PieceColor {
