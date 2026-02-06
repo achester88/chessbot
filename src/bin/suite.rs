@@ -5,11 +5,13 @@
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::env;
+use std::{env, thread};
 use std::process::ExitCode;
-use std::time::Instant;
+use std::sync::mpsc;
+use std::time::{Duration, Instant};
 use chessbot::chessbot::board::Board;
 use chessbot::chessbot::engine::Engine;
+use chessbot::chessbot::perft::multi_perft;
 
 #[derive(Debug, Clone)]
 struct LineInfo {
@@ -21,25 +23,6 @@ enum Status {
     Passed,
     Acceptable,
     Failed
-}
-
-
-fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
-    //println!("--------------------[ Perft depth: {} ]---------------------", depth);
-    let mut count = 0;
-
-    if depth == 0 {
-        return 1;
-    }
-
-    let moves = eng.gen_moves(board);
-    //println!("moves count: {:?}", moves);
-    for m in moves {
-        let (_, _, new_board, _) = m;
-        count += perft(eng, new_board, depth - 1);
-    }
-
-    count
 }
 
 fn main()-> ExitCode {
@@ -62,6 +45,19 @@ fn main()-> ExitCode {
 
         tests.push(data);
     }
+
+    /*
+    let engine = Engine::new();
+    let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
+
+    let result = multi_perft(&engine, board, 2, 7);
+
+    println!("R: {}, E: {}", result, 2039);
+
+    return ExitCode::SUCCESS;
+    */
+
+
 
     println!("--------------------------------------------------");
     println!("Starting Perft Testing Suite\n");
@@ -90,7 +86,7 @@ fn main()-> ExitCode {
         let mut i = 0;
         while i < test.node_count.len() && i <= depth_limit {
             print!("    D{} ", i);
-            let count = perft(&engine, board, i);
+            let count = multi_perft(&engine, board, i, 8);//perft(&engine, board, i);
             match check_outcome(count, test.node_count[i]) {
                 Status::Passed => {
                     println!(" \x1b[1;32mPassed\x1b[0m");

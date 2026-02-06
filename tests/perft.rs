@@ -1,25 +1,9 @@
 use std::collections::HashMap;
 use chessbot::chessbot::board::Board;
 use chessbot::chessbot::engine::Engine;
+use chessbot::chessbot::perft::*;
 
-fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
-    //println!("--------------------[ Perft depth: {} ]---------------------", depth);
-    let mut count = 0;
-
-    if depth == 0 {
-        return 1;
-    }
-
-    let moves = eng.gen_moves(board);
-    //println!("moves count: {:?}", moves);
-    for (from, to, new_board, _) in moves {
-        //new_board.print_board();
-        //println!("{}", Board::move_to_lan(&(from, to, new_board)));
-        count += perft(&eng, new_board, depth - 1);
-    }
-
-    return count;
-}
+const THREAD_COUNT: usize = 8;
 
 fn perft_from_string(eng: &Engine, board: Board, list:  String, depth: usize) -> bool {
 
@@ -42,7 +26,7 @@ fn perft_from_string(eng: &Engine, board: Board, list:  String, depth: usize) ->
         let (from, to, new_board, _) = m;
         //new_board.print_board();
         //count += perft(&eng, new_board, 1);
-        results.insert(Board::move_to_lan(&m) , perft(&eng, new_board, depth-1));
+        results.insert(Board::move_to_lan(&m) , multi_perft(&eng, new_board, depth-1, THREAD_COUNT));
     }
 
     let mut pass = true;
@@ -80,7 +64,7 @@ fn perft_from_string(eng: &Engine, board: Board, list:  String, depth: usize) ->
 fn ip_one() {
     let engine = Engine::new();
     let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &engine);
-    let count = perft(&engine, board, 1);
+    let count = multi_perft(&engine, board, 1, THREAD_COUNT);
 
     assert_eq!(count, 20);
 }
@@ -89,7 +73,7 @@ fn ip_one() {
 fn ip_two() {
     let engine = Engine::new();
     let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &engine);
-    let count = perft(&engine, board, 2);
+    let count = multi_perft(&engine, board, 2, THREAD_COUNT);
 
     assert_eq!(count, 400);
 }
@@ -98,7 +82,7 @@ fn ip_two() {
 fn ip_three() {
     let engine = Engine::new();
     let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &engine);
-    let count = perft(&engine, board, 3);
+    let count = multi_perft(&engine, board, 3, THREAD_COUNT);
 
     assert_eq!(count, 8902);
 }
@@ -107,7 +91,7 @@ fn ip_three() {
 fn ip_four() {
     let engine = Engine::new();
     let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &engine);
-    let count = perft(&engine, board, 4);
+    let count = multi_perft(&engine, board, 4, THREAD_COUNT);
 
     assert_eq!(count, 197281);
 }
@@ -116,7 +100,7 @@ fn ip_four() {
 fn ip_five() {
     let engine = Engine::new();
     let board = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &engine);
-    let count = perft(&engine, board, 5);
+    let count = multi_perft(&engine, board, 5, THREAD_COUNT);
 
     assert_eq!(count, 4865609);
 }
@@ -125,7 +109,7 @@ fn ip_five() {
 fn p2_one() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
-    let count = perft(&engine, board, 1);
+    let count = multi_perft(&engine, board, 1, THREAD_COUNT);
 
     assert_eq!(count, 48);
 }
@@ -134,7 +118,7 @@ fn p2_one() {
 fn p2_two() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
-    let count = perft(&engine, board, 2);
+    let count = multi_perft(&engine, board, 2, THREAD_COUNT);
 
     assert_eq!(count, 2039);
 }
@@ -143,7 +127,7 @@ fn p2_two() {
 fn p2_three() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
-    let count = perft(&engine, board, 3);
+    let count = multi_perft(&engine, board, 3, THREAD_COUNT);
 
     assert_eq!(count, 97862);
 }
@@ -152,7 +136,7 @@ fn p2_three() {
 fn p3_one() {
     let engine = Engine::new();
     let board = Board::new("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", &engine);
-    let count = perft(&engine, board, 1);
+    let count = multi_perft(&engine, board, 1, THREAD_COUNT);
 
     assert_eq!(count, 14);
 }
@@ -161,7 +145,7 @@ fn p3_one() {
 fn p3_two() {
     let engine = Engine::new();
     let board = Board::new("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", &engine);
-    let count = perft(&engine, board, 2);
+    let count = multi_perft(&engine, board, 2, THREAD_COUNT);
 
     assert_eq!(count, 191);
 }
@@ -170,7 +154,7 @@ fn p3_two() {
 fn p3_three() { //E.P?
     let engine = Engine::new();
     let board = Board::new("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", &engine);
-    let count = perft(&engine, board, 3);
+    let count = multi_perft(&engine, board, 3, THREAD_COUNT);
 
     assert_eq!(count, 2812);
 }
@@ -179,7 +163,7 @@ fn p3_three() { //E.P?
 fn p4_one() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", &engine);
-    let count = perft(&engine, board, 1);
+    let count = multi_perft(&engine, board, 1, THREAD_COUNT);
 
     assert_eq!(count, 6);
 }
@@ -188,7 +172,7 @@ fn p4_one() {
 fn p4_two() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", &engine);
-    let count = perft(&engine, board, 2);
+    let count = multi_perft(&engine, board, 2, THREAD_COUNT);
 
     assert_eq!(count, 264);
 }
@@ -197,7 +181,7 @@ fn p4_two() {
 fn p4_three() {
     let engine = Engine::new();
     let board = Board::new("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", &engine);
-    let count = perft(&engine, board, 3);
+    let count = multi_perft(&engine, board, 3, THREAD_COUNT);
 
     assert_eq!(count, 9467);
 }
@@ -206,7 +190,7 @@ fn p4_three() {
 fn p5_one() {
     let engine = Engine::new();
     let board = Board::new("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", &engine);
-    let count = perft(&engine, board, 1);
+    let count = multi_perft(&engine, board, 1, THREAD_COUNT);
 
     assert_eq!(count, 44);
 }
@@ -215,7 +199,7 @@ fn p5_one() {
 fn p5_two() {
     let engine = Engine::new();
     let board = Board::new("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", &engine);
-    let count = perft(&engine, board, 2);
+    let count = multi_perft(&engine, board, 2, THREAD_COUNT);
 
     assert_eq!(count, 1486);
 }
@@ -224,7 +208,7 @@ fn p5_two() {
 fn p5_three() {
     let engine = Engine::new();
     let board = Board::new("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", &engine);
-    let count = perft(&engine, board, 3);
+    let count = multi_perft(&engine, board, 3, THREAD_COUNT);
 
     assert_eq!(count, 62379);
 }
@@ -233,7 +217,7 @@ fn p5_three() {
 fn p6_one() {
     let engine = Engine::new();
     let board = Board::new("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", &engine);
-    let count = perft(&engine, board, 1);
+    let count = multi_perft(&engine, board, 1, THREAD_COUNT);
 
     assert_eq!(count, 46);
 }
@@ -242,7 +226,7 @@ fn p6_one() {
 fn p6_two() {
     let engine = Engine::new();
     let board = Board::new("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", &engine);
-    let count = perft(&engine, board, 2);
+    let count = multi_perft(&engine, board, 2, THREAD_COUNT);
 
     assert_eq!(count, 2079);
 }
@@ -251,7 +235,7 @@ fn p6_two() {
 fn p6_three() {
     let engine = Engine::new();
     let board = Board::new("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", &engine);
-    let count = perft(&engine, board, 3);
+    let count = multi_perft(&engine, board, 3, THREAD_COUNT);
 
     assert_eq!(count, 89890);
 }
@@ -260,7 +244,7 @@ fn p6_three() {
 fn p6_four() {
     let engine = Engine::new();
     let board = Board::new("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", &engine);
-    let count = perft(&engine, board, 4);
+    let count = multi_perft(&engine, board, 4, THREAD_COUNT);
 
     assert_eq!(count, 3894594);
 }
@@ -459,7 +443,7 @@ fn full_hash_1_c() {
 #[test]
 fn custom_c() {
     let engine = Engine::new();
-    let board_init =  ("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
+    let board_init =  Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
 
     let moves = engine.gen_moves(board_init);
 
