@@ -37,7 +37,6 @@ impl Engine {
     }
     //from, to, new board
     pub fn gen_moves(&self, board: Board) -> Vec<Move> {
-        
         let mut all_moves: Vec<Move> = vec![];
         let mut possable: Vec<(usize, u64)> = vec![];
 
@@ -360,11 +359,11 @@ impl Engine {
         }
 
         //for testing
-        for (_, _, all_board, _) in &all_moves {
+        //for (_, _, all_board, _) in &all_moves {
             //all_board.print_board();
-        }
+        //}
 
-        let pawns = board_serialize(board.pawns[board.turn]);
+        //let pawns = board_serialize(board.pawns[board.turn]);
 
         //println!("---------- END {} -----------", board.half_moves);
 

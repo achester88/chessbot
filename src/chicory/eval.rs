@@ -17,7 +17,11 @@ pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: f32, mut beta
     let moves = eng.gen_moves(board);
 
     if moves.len() == 0 {
-        return (eval(&board, false), None)
+        return match !board.turn {
+            PieceColor::White => (999999999.0, None),
+            PieceColor::Black => (-999999999.0, None)
+        };
+        //return (eval(&board, false), None)
     }
 
     let mut best_move = moves[0];
@@ -69,7 +73,10 @@ pub fn eval(board: &Board, real: bool) -> f32 {
     score += ((board_serialize(board.bishops[PieceColor::White]).len() as f32) - (board_serialize(board.bishops[PieceColor::Black]).len() as f32)) * 300.0;
     score += ((board_serialize(board.rooks[PieceColor::White]).len() as f32) - (board_serialize(board.rooks[PieceColor::Black]).len() as f32)) * 500.0;
     score += ((board_serialize(board.queens[PieceColor::White]).len() as f32) - (board_serialize(board.queens[PieceColor::Black]).len() as f32)) * 900.0;
+
+    /*
     score += ((board_serialize(board.kings[PieceColor::White]).len() as f32) - (board_serialize(board.kings[PieceColor::Black]).len() as f32)) * 999999999.0;
+    */
 
     if real {
         println!("info string ||||||||||||||||||||||| eval {}", score);

@@ -77,7 +77,7 @@ pub struct Board {
     pub full_move: u64,
 
     pub occupied: u64,
-    pub pieces: [u64; 2], //All piece of the same color
+    pub pieces: [u64; 2], //All piece of the same color,
 }
 
 impl Board {
