@@ -1,6 +1,6 @@
-use chessbot::chessbot::bitboard::{board_serialize, print_bitboard, print_bitboard_pos};
-use chessbot::chessbot::board::{Board, PieceColor};
-use chessbot::chessbot::engine::{Engine, Move};
+use chicory::chicory::bitboard::{board_serialize, print_bitboard, print_bitboard_pos};
+use chicory::chicory::board::{Board, PieceColor};
+use chicory::chicory::engine::{Engine, Move};
 
 mod common;
 use common::{fen_arr};

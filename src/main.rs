@@ -8,11 +8,12 @@ use uci_interface::*;
 use std::io::{stdin, stdout, Write};
 use std::rc::{Rc, Weak};
 use std::sync::mpsc;
-use std::thread;
+use std::{panic, thread};
 use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
+use chicory::eval::eval;
 
 fn main() {
     let (tx, rx): (Sender<Cmd>, Receiver<Cmd>) = mpsc::channel();
@@ -71,7 +72,8 @@ fn main() {
                             let moves = engine.gen_moves(cal_board.unwrap());
 
                             //cur_best_move = Some(new_move[0]);
-                            let (score, best_move) = minmax(&engine, cal_board.unwrap(), 2, -f32::INFINITY, f32::INFINITY, cal_board.unwrap().turn);
+                            let (score, best_move) = minmax(&engine, cal_board.unwrap(), 3, -f32::INFINITY, f32::INFINITY, cal_board.unwrap().turn, 1);
+                            println!("info score cp {}", eval(&best_move.unwrap().2, true));
                             cur_best_move = best_move;
                             self_stop = true;
                         }
@@ -95,6 +97,9 @@ fn main() {
                     stop_calculation.store(false, Ordering::Relaxed);
 
                 },
+                Cmd::Set(board) => {
+                    println!("info score cp {}", eval(&board, true));
+                }
                 _ => {}
             }
 

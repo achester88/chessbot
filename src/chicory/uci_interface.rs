@@ -78,10 +78,10 @@ impl UciInterface {
             if i < command.len() && command[i] == "moves" {
                 i += 1;
                 while i < command.len() {
-                    println!("info string move: {} ", command[i]);
-                    println!("info bb string {:?} {}", self.current_board?.turn, command[i]);
+                    //println!("info string move: {} ", command[i]);
+                    //println!("info bb string {:?} {}", self.current_board?.turn, command[i]);
                     self.read_move(&command[i]);
-                    println!("info aa string {:?} {}", self.current_board?.turn, command[i]);
+                    //println!("info aa string {:?} {}", self.current_board?.turn, command[i]);
                     i += 1;
                 }
             }
@@ -89,19 +89,19 @@ impl UciInterface {
             if command[i] == "startpos" {
                 i += 1;
 
-                println!("info string {} < {} | {}", i, command.len(), command[i]);
+                //println!("info string {} < {} | {}", i, command.len(), command[i]);
                 //grab last move made
                 if i < command.len() && command[i] == "moves" {
                     i += 1;
                     let mut all_moves = vec![];
                     while i < command.len() {
-                       println!("info string b: {:?} {}", self.current_board?.turn, command[i]);
+                       //println!("info string b: {:?} {}", self.current_board?.turn, command[i]);
                         all_moves.push(&command[i]);
-                        println!("info string a: {:?} {}", self.current_board?.turn, command[i]);
+                        //println!("info string a: {:?} {}", self.current_board?.turn, command[i]);
                         i += 1;
-                        println!("info string i: {} {:?}", i, all_moves);
+                        //println!("info string i: {} {:?}", i, all_moves);
                     }
-                    println!("info string {:?}", all_moves[all_moves.len()-1]);
+                    //println!("info string {:?}", all_moves[all_moves.len()-1]);
                     self.read_move(&all_moves[all_moves.len()-1]);
                 }
             }
@@ -111,13 +111,13 @@ impl UciInterface {
         //TODO Only need last move unless ucinewgame
 
 
-        println!("info string {:?}", self.current_board?.turn);
+        //println!("info string {:?}", self.current_board?.turn);
 
         Some(Cmd::Set(self.current_board.unwrap()))
     }
 
     fn read_move(&mut self, str: &str) {
-        println!("info string read_move");
+        //println!("info string read_move");
         if str == "O-O" {
             let board = self.current_board.unwrap().castle(80);
             self.current_board = Some(board);
@@ -127,7 +127,7 @@ impl UciInterface {
         } else {
             let from = Board::lan_to_pos(&str[0..2]);
             let to = Board::lan_to_pos(&str[2..4]);
-            println!("info string here");
+            //println!("info string here");
             self.current_board = Some(self.current_board.unwrap().move_piece(to, from));
         }
     }

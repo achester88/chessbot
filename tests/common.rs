@@ -1,8 +1,8 @@
 use std::sync::mpsc;
 use std::thread;
-use chessbot::chessbot::{board, engine};
+use chicory::chicory::{board, engine};
 use board::{Board, PieceType, PieceColor};
-use chessbot::chessbot::engine::Engine;
+use chicory::chicory::engine::Engine;
 use engine::{Move};
 
 pub fn fen_arr(from: usize, new_boards: Vec<(usize, &str)> ) -> Vec<Move> {

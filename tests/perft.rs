@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use chessbot::chessbot::board::Board;
-use chessbot::chessbot::engine::Engine;
-use chessbot::chessbot::perft::*;
+use chicory::chicory::board::Board;
+use chicory::chicory::engine::Engine;
+use chicory::chicory::perft::*;
 
 const THREAD_COUNT: usize = 8;
 

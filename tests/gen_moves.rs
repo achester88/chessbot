@@ -1,5 +1,5 @@
 //use crate::board;
-use chessbot::chessbot::{board, engine, bitboard};
+use chicory::chicory::{board, engine, bitboard};
 use board::{Board};
 use engine::{Engine};
 use bitboard::{print_bitboard_pos};
