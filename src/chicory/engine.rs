@@ -37,22 +37,8 @@ impl Engine {
     }
     //from, to, new board
     pub fn gen_moves(&self, board: Board) -> Vec<Move> {
-        //println!("---------- Gen Moves {} -----------", board.half_moves);
-
-        //board.print_board();
-        //println!("----------------------------------");
-        //println!("\n");
-
-        //println!("CI: {:08b}", board.casling);
-
-        //if only kings or missing king, game over -> no moves
-
-        //if (board.occupied & !(board.kings[PieceColor::Black] | board.kings[PieceColor::White])) == 0 ||  board.kings[PieceColor::Black] == 0 ||  board.kings[PieceColor::White] == 0 {
-            //return vec![];
-        //}
-
+        
         let mut all_moves: Vec<Move> = vec![];
-
         let mut possable: Vec<(usize, u64)> = vec![];
 
         //######### BASIC MOVE GEN #########
@@ -462,11 +448,6 @@ impl Engine {
                 en_pass = 1 << board.en_passant;
             }
 
-            if sq == 33 {
-                //print_bitboard_pos(self.pawn_attacks[PieceColor::White as usize][sq], sq);
-                //print_bitboard_pos(en_pass, sq);
-            }
-            
             moves = moves | (self.pawn_attacks[PieceColor::White as usize][sq] & (board.pieces[PieceColor::Black as usize] | en_pass));
 
         } else { //Black
@@ -513,8 +494,6 @@ impl Engine {
     pub fn gen_queen_moves(&self, board: &Board, sq: usize, pieces: u64) -> (usize, u64) {
         let attack =
             self.gen_rook_moves(board, sq, pieces).1 | self.gen_bishop_moves(board, sq, pieces).1;
-
-        //let attack = all_moves & !pieces;
 
         return (sq, attack); //board_serialize(attack);
     }
@@ -655,12 +634,6 @@ impl Engine {
                 PieceType::Empty => panic!("Empty can not check"),
             };
 
-            //if pc == !board.turn {
-                //let hit_rank = match !board.turn {
-                //    PieceColor::White => att & 0x6c00000000000000 != 0 && board.casling & 0b0011 != 0,
-                //    PieceColor::Black => att & 0x6c != 0 && board.casling & 0b1100 != 0,
-                //};
-
                 match pc {
                     PieceColor::White => {
                         let hit_rank = att & 0x6c00000000000000 != 0 && board.casling & 0b0011 != 0;
@@ -696,7 +669,6 @@ impl Engine {
 
         //TODO COVER ALL CASES
 
-
         for pos in board_serialize(board.bishops[PieceColor::Black]) {
             let cast = self.gen_ray_attacks(0, Dir::SOWE, pos) |
                 self.gen_ray_attacks(0, Dir::SOEA, pos);
@@ -727,13 +699,6 @@ impl Engine {
             }
         }
 
-
-        //println!("--------------");
-        //print_bitboard(casling_blockers[2]);
-        //print_bitboard(casling_attacks[2]);
-
-        //println!("C: {:b}", casling);
-
         if board.occupied & 0xe00000000000000 != 0 {
             casling &= 0b1101_1111;
         }
@@ -746,10 +711,6 @@ impl Engine {
         if board.occupied & 0x60 != 0 {
             casling &= 0b1011_1111;
         }
-
-        //println!("CC: {:b}", casling);
-
-        //println!("{:b}", casling);
 
         (casling, casling_attacks, casling_blockers)
     }

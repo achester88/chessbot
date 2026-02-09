@@ -3,6 +3,7 @@ mod chicory;
 use board::*;
 use chicory::*;
 use engine::*;
+use eval::minmax;
 use uci_interface::*;
 use std::io::{stdin, stdout, Write};
 use std::rc::{Rc, Weak};
@@ -67,9 +68,11 @@ fn main() {
                         let engine = Engine::new();
 
                         while !stop_calculation_clone.load(Ordering::Relaxed) && !self_stop {
-                            let new_move = engine.gen_moves(cal_board.unwrap());
+                            let moves = engine.gen_moves(cal_board.unwrap());
 
-                            cur_best_move = Some(new_move[0]);
+                            //cur_best_move = Some(new_move[0]);
+                            let (score, best_move) = minmax(&engine, cal_board.unwrap(), 2, -f32::INFINITY, f32::INFINITY, cal_board.unwrap().turn);
+                            cur_best_move = best_move;
                             self_stop = true;
                         }
 
