@@ -12,14 +12,16 @@ pub enum Cmd {
 
 pub struct UciInterface {
     pub current_board: Option<Board>,
-    current_move: usize
+    current_move: usize,
+    pub search_depth: usize,
 }
 impl UciInterface {
 
     pub fn new() -> Self {
         UciInterface {
             current_board: None,
-            current_move: 0
+            current_move: 0,
+            search_depth: 4,
         }
     }
 
@@ -29,6 +31,7 @@ impl UciInterface {
         let version = env!("CARGO_PKG_VERSION");
         println!("id name {} {}", name, version);
         println!("id author {}", authors);
+        println!("option name SearchDepth type spin default 4 min 1 max 99");
         println!("uciok");
 
         None
@@ -163,8 +166,17 @@ impl UciInterface {
         std::process::exit(0);
     }
 
-    pub fn set_option(&mut self) -> Option<Cmd> {
-
+    pub fn set_option(&mut self, command: Vec<&str>) -> Option<Cmd> {
+        if command[1] == "name" {
+            match command[2] {
+                "SearchDepth" => {
+                    if command[3] == "value" {
+                        self.search_depth = command[4].parse().unwrap();
+                    }
+                },
+                _ => {}
+            }
+        }
         None
     }
 

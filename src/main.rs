@@ -43,7 +43,7 @@ fn main() {
             "ucinewgame" => interface.uci_new_game(),
             "stop" => interface.stop(),
             "quit" => interface.quit(),
-            "setoption" => interface.set_option(),
+            "setoption" => interface.set_option(commands),
             _ => { None }
 
         };
@@ -72,7 +72,7 @@ fn main() {
                             let moves = engine.gen_moves(cal_board.unwrap());
 
                             //cur_best_move = Some(new_move[0]);
-                            let (score, best_move) = minmax(&engine, cal_board.unwrap(), 3, -f32::INFINITY, f32::INFINITY, cal_board.unwrap().turn, 1);
+                            let (score, best_move, _) = minmax(&engine, cal_board.unwrap(), interface.search_depth, -f32::INFINITY, f32::INFINITY, cal_board.unwrap().turn, 1, true);
                             println!("info score cp {}", eval(&best_move.unwrap().2, true));
                             cur_best_move = best_move;
                             self_stop = true;
