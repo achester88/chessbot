@@ -1,7 +1,7 @@
 use std::process::Command;
-use crate::chessbot::board::Board;
-use crate::chessbot::engine::Engine;
-use crate::chessbot::uci_interface::Cmd::Set;
+use crate::chicory::board::Board;
+use crate::chicory::engine::Engine;
+use crate::chicory::uci_interface::Cmd::Set;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Cmd {
@@ -12,14 +12,16 @@ pub enum Cmd {
 
 pub struct UciInterface {
     pub current_board: Option<Board>,
-    current_move: usize
+    current_move: usize,
+    pub search_depth: usize,
 }
 impl UciInterface {
 
     pub fn new() -> Self {
         UciInterface {
             current_board: None,
-            current_move: 0
+            current_move: 0,
+            search_depth: 4,
         }
     }
 
@@ -29,6 +31,7 @@ impl UciInterface {
         let version = env!("CARGO_PKG_VERSION");
         println!("id name {} {}", name, version);
         println!("id author {}", authors);
+        println!("option name SearchDepth type spin default 4 min 1 max 99");
         println!("uciok");
 
         None
@@ -78,10 +81,10 @@ impl UciInterface {
             if i < command.len() && command[i] == "moves" {
                 i += 1;
                 while i < command.len() {
-                    println!("info string move: {} ", command[i]);
-                    println!("info bb string {:?} {}", self.current_board?.turn, command[i]);
+                    //println!("info string move: {} ", command[i]);
+                    //println!("info bb string {:?} {}", self.current_board?.turn, command[i]);
                     self.read_move(&command[i]);
-                    println!("info aa string {:?} {}", self.current_board?.turn, command[i]);
+                    //println!("info aa string {:?} {}", self.current_board?.turn, command[i]);
                     i += 1;
                 }
             }
@@ -89,19 +92,19 @@ impl UciInterface {
             if command[i] == "startpos" {
                 i += 1;
 
-                println!("info string {} < {} | {}", i, command.len(), command[i]);
+                //println!("info string {} < {} | {}", i, command.len(), command[i]);
                 //grab last move made
                 if i < command.len() && command[i] == "moves" {
                     i += 1;
                     let mut all_moves = vec![];
                     while i < command.len() {
-                       println!("info string b: {:?} {}", self.current_board?.turn, command[i]);
+                       //println!("info string b: {:?} {}", self.current_board?.turn, command[i]);
                         all_moves.push(&command[i]);
-                        println!("info string a: {:?} {}", self.current_board?.turn, command[i]);
+                        //println!("info string a: {:?} {}", self.current_board?.turn, command[i]);
                         i += 1;
-                        println!("info string i: {} {:?}", i, all_moves);
+                        //println!("info string i: {} {:?}", i, all_moves);
                     }
-                    println!("info string {:?}", all_moves[all_moves.len()-1]);
+                    //println!("info string {:?}", all_moves[all_moves.len()-1]);
                     self.read_move(&all_moves[all_moves.len()-1]);
                 }
             }
@@ -111,13 +114,13 @@ impl UciInterface {
         //TODO Only need last move unless ucinewgame
 
 
-        println!("info string {:?}", self.current_board?.turn);
+        //println!("info string {:?}", self.current_board?.turn);
 
         Some(Cmd::Set(self.current_board.unwrap()))
     }
 
     fn read_move(&mut self, str: &str) {
-        println!("info string read_move");
+        //println!("info string read_move");
         if str == "O-O" {
             let board = self.current_board.unwrap().castle(80);
             self.current_board = Some(board);
@@ -127,7 +130,7 @@ impl UciInterface {
         } else {
             let from = Board::lan_to_pos(&str[0..2]);
             let to = Board::lan_to_pos(&str[2..4]);
-            println!("info string here");
+            //println!("info string here");
             self.current_board = Some(self.current_board.unwrap().move_piece(to, from));
         }
     }
@@ -163,8 +166,17 @@ impl UciInterface {
         std::process::exit(0);
     }
 
-    pub fn set_option(&mut self) -> Option<Cmd> {
-
+    pub fn set_option(&mut self, command: Vec<&str>) -> Option<Cmd> {
+        if command[1] == "name" {
+            match command[2] {
+                "SearchDepth" => {
+                    if command[3] == "value" {
+                        self.search_depth = command[4].parse().unwrap();
+                    }
+                },
+                _ => {}
+            }
+        }
         None
     }
 

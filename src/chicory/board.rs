@@ -1,8 +1,8 @@
 use super::bitboard::{print_bitboard, print_bitboard_pos};
 use core::ops::{Index, IndexMut, Not};
-use crate::chessbot::bitboard::board_serialize;
-use crate::chessbot::engine::Move;
-use crate::chessbot::engine::Engine;
+use crate::chicory::bitboard::board_serialize;
+use crate::chicory::engine::Move;
+use crate::chicory::engine::Engine;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PieceColor {
@@ -77,7 +77,7 @@ pub struct Board {
     pub full_move: u64,
 
     pub occupied: u64,
-    pub pieces: [u64; 2], //All piece of the same color
+    pub pieces: [u64; 2], //All piece of the same color,
 }
 
 impl Board {

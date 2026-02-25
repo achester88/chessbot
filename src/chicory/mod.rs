@@ -4,3 +4,4 @@ pub mod bitboard;
 pub mod utils;
 pub mod uci_interface;
 pub mod perft;
+pub mod eval;
