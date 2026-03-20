@@ -252,10 +252,10 @@ fn p6_four() {
 #[test]
 fn custom() {
     let engine = Engine::new();
-    let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
-    let count = perft(&engine, board, 3);
+    let board = Board::new("r3k2r/8/8/8/8/8/8/2R1K2R w Kkq - 0 1", &engine);
+    let count = perft(&engine, board, 4);
 
-    assert_eq!(count, 97862);
+    assert_eq!(count, 312835);
 }
 
 #[test]
@@ -263,59 +263,36 @@ fn full_hash() {
 
     //TODO FIX BLOCKED CASLING ATTACKS
 
-    let input = String::from("a2a3: 2186
-b2b3: 1964
-g2g3: 1882
-d5d6: 1991
-a2a4: 2149
-g2g4: 1843
-g2h3: 1970
-d5e6: 2241
-c3b1: 2038
-c3d1: 2040
-c3a4: 2203
-c3b5: 2138
-e5d3: 1803
-e5c4: 1880
-e5g4: 1878
-e5c6: 2027
-e5g6: 1997
-e5d7: 2124
-e5f7: 2080
-d2c1: 1963
-d2e3: 2136
-d2f4: 2000
-d2g5: 2134
-d2h6: 2019
-e2d1: 1733
-e2f1: 2060
-e2d3: 2050
-e2c4: 2082
-e2b5: 2057
-e2a6: 1907
-a1b1: 1969
-a1c1: 1968
-a1d1: 1885
-h1f1: 1929
-h1g1: 2013
-f3d3: 2005
-f3e3: 2174
-f3g3: 2214
-f3h3: 2360
-f3f4: 2132
-f3g4: 2169
-f3f5: 2396
-f3h5: 2267
-f3f6: 2111
-e1d1: 1894
-e1f1: 1855
-e1g1: 2059
-e1c1: 1887");
+    let input = String::from("c1a1: 13231
+c1b1: 14252
+c1d1: 11317
+c1c2: 15278
+c1c3: 15119
+c1c4: 15061
+c1c5: 15011
+c1c6: 14836
+c1c7: 11599
+c1c8: 2318
+h1f1: 11144
+h1g1: 13435
+h1h2: 15298
+h1h3: 14515
+h1h4: 13650
+h1h5: 12791
+h1h6: 11793
+h1h7: 8164
+h1h8: 1377
+e1d1: 11797
+e1f1: 12007
+e1d2: 15926
+e1e2: 17573
+e1f2: 15991
+e1g1: 9352");
 
     let eng = Engine::new();
-    let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &eng);
+    let board = Board::new("r3k2r/8/8/8/8/8/8/2R1K2R w Kkq - 0 1", &eng);
 
-    assert_eq!(perft_from_string(&eng, board, input, 3), true);
+    assert_eq!(perft_from_string(&eng, board, input, 4), true);
 }
 
 #[test]
@@ -434,77 +411,54 @@ f3f6: 1");
 #[test]
 fn full_hash_1_c() {
     let engine = Engine::new();
-    let board = Board::new("r1n1k2r/p1ppqpb1/b3pnp1/3PN3/1p2P3/2N2Q1p/PPPB1PPP/R2BK2R w KQkq - 1 1", &engine);
+    let board = Board::new("r3k3/8/8/8/8/8/8/4K3 b q - 0 1", &engine);
     let count = perft(&engine, board, 1);
 
-    assert_eq!(count, 39);
+    assert_eq!(count, 16);
 }
 
 #[test]
 fn custom_c() {
     let engine = Engine::new();
-    let board_init =  Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
+    let board_init =  Board::new("r3k3/8/8/8/8/8/8/4K3 b q - 0 1", &engine);
 
-    let moves = engine.gen_moves(board_init);
+    //let moves = engine.gen_moves(board_init);
 
-    let moves_2 = engine.gen_moves( moves[16].2);
+   // let moves_2 = engine.gen_moves( moves[16].2);
 
-    let board = moves_2[37].2;
+    //let board = moves_2[37].2;
 
-    let mut i = 0;
+    //let mut i = 0;
 
     //while i < moves_2.len() {
     //    println!("{}: {}", i, Board::move_to_lan(&moves_2[i]));
     //    i += 1;
     //}
 
-    println!("{:?}", moves_2[37]);
+    //println!("{:?}", moves_2[37]);
 
-    println!("{}", Board::move_to_lan(&moves[37]));
+    //println!("{}", Board::move_to_lan(&moves[37]));
 
-    let input = String::from("a2a3: 1
-b2b3: 1
-g2g3: 1
-d5d6: 1
-a2a4: 1
-g2g4: 1
-g2h3: 1
-d5e6: 1
-c3b1: 1
-c3e2: 1
-c3a4: 1
-c3b5: 1
-e5d3: 1
-e5c4: 1
-e5g4: 1
-e5c6: 1
-e5g6: 1
-e5d7: 1
-e5f7: 1
-d1e2: 1
-d2c1: 1
-d2e3: 1
-d2f4: 1
-d2g5: 1
-d2h6: 1
-a1b1: 1
-a1c1: 1
-h1f1: 1
-h1g1: 1
-f3e2: 1
-f3d3: 1
-f3e3: 1
-f3g3: 1
-f3h3: 1
-f3f4: 1
-f3g4: 1
-f3f5: 1
-f3h5: 1
-f3f6: 1");
+    let input = String::from("a8a1: 1
+a8a2: 1
+a8a3: 1
+a8a4: 1
+a8a5: 1
+a8a6: 1
+a8a7: 1
+a8b8: 1
+a8c8: 1
+a8d8: 1
+e8d7: 1
+e8e7: 1
+e8f7: 1
+e8d8: 1
+e8f8: 1
+e8c8: 1");
 
     let eng = Engine::new();
 
-    assert_eq!(perft_from_string(&eng, board, input, 1), true);
+    assert_eq!(perft_from_string(&eng, board_init, input, 1), true);
     //assert_eq!(false, true);
 }
 

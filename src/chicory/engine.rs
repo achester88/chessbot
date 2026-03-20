@@ -118,7 +118,7 @@ impl Engine {
                             new_board.casling &= 0b1101_1111;
                             new_board.casling_attacks[1] |= (1 << 3);
                         }
-                        if self.can_castle_through(0xc00000000000000, &board) {
+                        if self.can_castle_through(0xc, &board) {
                             all_moves.push((88, 88, new_board, None));
                         }
 
@@ -132,7 +132,7 @@ impl Engine {
                             new_board.casling &= 0b1110_1111;
                             new_board.casling_attacks[0] |= (1 << 5);
                         }
-                        if self.can_castle_through(0x6000000000000000, &board) {
+                        if self.can_castle_through(0x60, &board) {
                             all_moves.push((80, 80, new_board, None));
                         }
                     }
@@ -148,7 +148,7 @@ impl Engine {
                             new_board.casling_attacks[3] |= (1 << 59);
                         }
                         
-                        if self.can_castle_through(0xc, &board) {
+                        if self.can_castle_through(0xc00000000000000, &board) {
                             all_moves.push((88, 88, new_board, None));
                         }
                     }
@@ -162,7 +162,7 @@ impl Engine {
                             new_board.casling_attacks[2] |= (1 << 61);
                         }
 
-                        if self.can_castle_through(0x60, &board) {
+                        if self.can_castle_through(0x6000000000000000, &board) {
                             all_moves.push((80, 80, new_board, None));
                         }
                     }
@@ -399,7 +399,7 @@ impl Engine {
                         PieceType::King => self.gen_king_moves(&board, to, opp_color),
                         PieceType::Empty => panic!("Empty can not check"),
                     };
-                    if (att & (1 << pos)) != 0 {
+                    if (att & (1 << i)) != 0 {
                         //let (cr, cf) = self.gen_check_info(&board, to, pos);
                         //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
                         //check_real |= cr;
