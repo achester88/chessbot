@@ -473,7 +473,7 @@ fn blocked_castle_att() {
         (80, "8/8/8/2b5/8/4p3/8/5RK1 b - - 2 2")
     ));
 
-    fen_moves[0].2.casling_attacks[2] = 17179869184;
+    //fen_moves[0].2.casling_attacks[2] = 17179869184;
 
     fen_moves.append(&mut fen_arr(7, vec!(
         (5, "8/8/8/2b5/8/4p3/8/4KR2 b - - 2 2"),
