@@ -109,7 +109,7 @@ impl Engine {
         if can_castle {
             match board.turn {
                 PieceColor::White => {
-                    if board.casling & 0b1000_1000 == 0b1000_1000 {//board.casling & 0b0100 != 0 && board.casling & 0b0100_0000 != 0 { //queenside
+                    if board.casling & 0b0000_1000 == 0b0000_1000 {//board.casling & 0b0100 != 0 && board.casling & 0b0100_0000 != 0 { //queenside
                         let mut new_board = board.castle(88);
 
                         let (_, att) = self.gen_rook_moves(&board, 3, board.pieces[board.turn]);
@@ -118,12 +118,12 @@ impl Engine {
                             new_board.casling &= 0b1101_1111;
                             new_board.casling_attacks[1] |= (1 << 3);
                         }
-                        if self.can_castle_through(0xc, &board) {
+                        if self.can_castle_through(0xc, &board) && (board.occupied & 0xe == 0) {
                             all_moves.push((88, 88, new_board, None));
                         }
 
                     }
-                    if board.casling & 0b0100_0100 == 0b0100_0100 {
+                    if board.casling & 0b0000_0100 == 0b0000_0100 {
                         let mut new_board = board.castle(80);
 
                         let (_, att) = self.gen_rook_moves(&board, 5, board.pieces[board.turn]);
@@ -132,13 +132,13 @@ impl Engine {
                             new_board.casling &= 0b1110_1111;
                             new_board.casling_attacks[0] |= (1 << 5);
                         }
-                        if self.can_castle_through(0x60, &board) {
+                        if self.can_castle_through(0x60, &board) && (board.occupied & 0x60 == 0) {
                             all_moves.push((80, 80, new_board, None));
                         }
                     }
                 },
                 PieceColor::Black => {
-                    if board.casling & 0b0010_0010 == 0b0010_0010 { //queenside
+                    if board.casling & 0b0000_0010 == 0b0000_0010 { //queenside
                         let mut new_board = board.castle(88);
 
                         let (_, att) = self.gen_rook_moves(&board, 59, board.pieces[board.turn]);
@@ -148,11 +148,11 @@ impl Engine {
                             new_board.casling_attacks[3] |= (1 << 59);
                         }
                         
-                        if self.can_castle_through(0xc00000000000000, &board) {
+                        if self.can_castle_through(0xc00000000000000, &board) && (board.occupied & 0xe00000000000000 == 0) {
                             all_moves.push((88, 88, new_board, None));
                         }
                     }
-                    if board.casling & 0b0001_0001 == 0b0001_0001 { //kingside
+                    if board.casling & 0b0000_0001 == 0b0000_0001 { //kingside
                         let mut new_board = board.castle(80);
 
                         let (_, att) = self.gen_rook_moves(&board, 61, board.pieces[board.turn]);
@@ -162,7 +162,7 @@ impl Engine {
                             new_board.casling_attacks[2] |= (1 << 61);
                         }
 
-                        if self.can_castle_through(0x6000000000000000, &board) {
+                        if self.can_castle_through(0x6000000000000000, &board) && (board.occupied & 0x6000000000000000 == 0) {
                             all_moves.push((80, 80, new_board, None));
                         }
                     }

@@ -298,123 +298,71 @@ e1g1: 9352");
 #[test]
 fn full_hash_2() {
 
-    let input = String::from("b4b3: 40
-g6g5: 38
-c7c6: 40
-d7d6: 38
-c7c5: 40
-h3g2: 39
-e6d5: 39
-b4c3: 39
-b6a4: 38
-b6c4: 42
-b6d5: 39
-b6c8: 39
-f6e4: 42
-f6g4: 38
-f6d5: 40
-f6h5: 40
-f6h7: 40
-f6g8: 40
-a6f1: 40
-a6e2: 40
-a6d3: 40
-a6c4: 39
-a6b5: 39
-a6b7: 42
-a6c8: 42
-g7h6: 39
-g7f8: 39
-a8b8: 39
-a8c8: 39
-a8d8: 39
-h8h4: 39
-h8h5: 39
-h8h6: 39
-h8h7: 39
-h8f8: 39
-h8g8: 39
-e7c5: 39
-e7d6: 38
-e7d8: 39
-e7f8: 39
-e8d8: 39
-e8f8: 39
-e8g8: 39
-e8c8: 39");
+    let input = String::from("a8a1: 656
+a8a2: 169
+a8a3: 672
+a8a4: 759
+a8a5: 759
+a8a6: 759
+a8a7: 759
+a8b8: 655
+a8c8: 583
+a8d8: 120
+h8h1: 466
+h8h2: 161
+h8h3: 576
+h8h4: 691
+h8h5: 717
+h8h6: 742
+h8h7: 763
+h8f8: 646
+h8g8: 674
+e8d7: 889
+e8e7: 893
+e8f7: 887
+e8d8: 632
+e8f8: 628
+e8g8: 670");
 
     let eng = Engine::new();
-    let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPB1PPP/R2BK2R b KQkq - 1 1", &eng);
+    let board = Board::new("r3k2r/8/8/8/8/8/3K4/2R4R b kq - 0 1", &eng);
     //println!("{:08b}", board.casling);
-    assert_eq!(perft_from_string(&eng, board, input, 2), true);
+    assert_eq!(perft_from_string(&eng, board, input, 3), true);
     //assert_eq!(false, true);
 }
 
 #[test]
 fn full_hash_2_c() {
     let engine = Engine::new();
-    let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPB1PPP/R2BK2R b KQkq - 1 1", &engine);
-    let count = perft(&engine, board, 2);
+    let board = Board::new("r3k2r/8/8/8/8/8/3K4/2R4R b kq - 0 1", &engine);
+    let count = perft(&engine, board, 3);
 
-    assert_eq!(count, 1733);
+    assert_eq!(count, 15926);
 }
 
 #[test]
 fn full_hash_1() {
 
-    let input = String::from("a2a3: 1
-b2b3: 1
-g2g3: 1
-d5d6: 1
-a2a4: 1
-g2g4: 1
-g2h3: 1
-d5e6: 1
-c3b1: 1
-c3e2: 1
-c3a4: 1
-c3b5: 1
-e5d3: 1
-e5c4: 1
-e5g4: 1
-e5c6: 1
-e5g6: 1
-e5d7: 1
-e5f7: 1
-d1e2: 1
-d2c1: 1
-d2e3: 1
-d2f4: 1
-d2g5: 1
-d2h6: 1
-a1b1: 1
-a1c1: 1
-h1f1: 1
-h1g1: 1
-f3e2: 1
-f3d3: 1
-f3e3: 1
-f3g3: 1
-f3h3: 1
-f3f4: 1
-f3g4: 1
-f3f5: 1
-f3h5: 1
-f3f6: 1");
+    let input = String::from("h1h2: 15
+d2d1: 29
+d2e1: 29
+d2e3: 29
+d2d3: 29
+d2c3: 30");
 
     let eng = Engine::new();
-    let board = Board::new("r1n1k2r/p1ppqpb1/b3pnp1/3PN3/1p2P3/2N2Q1p/PPPB1PPP/R2BK2R w KQkq - 1 1", &eng);
+    let board = Board::new("r3k3/8/8/8/8/8/3K3r/2R4R w q - 0 1", &eng);
 
-    assert_eq!(perft_from_string(&eng, board, input, 1), true);
+    assert_eq!(perft_from_string(&eng, board, input, 2), true);
 }
 
 #[test]
 fn full_hash_1_c() {
     let engine = Engine::new();
-    let board = Board::new("r3k3/8/8/8/8/8/8/4K3 b q - 0 1", &engine);
-    let count = perft(&engine, board, 1);
+    let board = Board::new("r3k3/8/8/8/8/8/3K3r/2R4R w q - 0 1", &engine);
+    let count = perft(&engine, board, 2);
 
-    assert_eq!(count, 16);
+    assert_eq!(count, 161);
 }
 
 #[test]
