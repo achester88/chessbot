@@ -118,8 +118,9 @@ impl Engine {
                             new_board.casling &= 0b1101_1111;
                             new_board.casling_attacks[1] |= (1 << 3);
                         }
-
-                        all_moves.push((88, 88, new_board, None));
+                        if self.can_castle_through(0xc00000000000000, &board) {
+                            all_moves.push((88, 88, new_board, None));
+                        }
 
                     }
                     if board.casling & 0b0100_0100 == 0b0100_0100 {
@@ -131,8 +132,9 @@ impl Engine {
                             new_board.casling &= 0b1110_1111;
                             new_board.casling_attacks[0] |= (1 << 5);
                         }
-
-                        all_moves.push((80, 80, new_board, None));
+                        if self.can_castle_through(0x6000000000000000, &board) {
+                            all_moves.push((80, 80, new_board, None));
+                        }
                     }
                 },
                 PieceColor::Black => {
@@ -145,8 +147,10 @@ impl Engine {
                             new_board.casling &= 0b0111_1111;
                             new_board.casling_attacks[3] |= (1 << 59);
                         }
-
-                        all_moves.push((88, 88, new_board, None));
+                        
+                        if self.can_castle_through(0xc, &board) {
+                            all_moves.push((88, 88, new_board, None));
+                        }
                     }
                     if board.casling & 0b0001_0001 == 0b0001_0001 { //kingside
                         let mut new_board = board.castle(80);
@@ -158,7 +162,9 @@ impl Engine {
                             new_board.casling_attacks[2] |= (1 << 61);
                         }
 
-                        all_moves.push((80, 80, new_board, None));
+                        if self.can_castle_through(0x60, &board) {
+                            all_moves.push((80, 80, new_board, None));
+                        }
                     }
                 }
             }
@@ -369,6 +375,44 @@ impl Engine {
 
         return all_moves;
     }
+    
+    pub fn can_castle_through(&self, pos: u64, board: &Board) -> bool {
+        let sq = board_serialize(pos);
+        let opp_color = !board.turn;
+
+        for i in sq {
+            let attackable_check_pos = self.gen_king_attackables(i);
+
+            let hits = attackable_check_pos & board.pieces[!board.turn];
+
+            let hits_pos = board_serialize(hits);
+
+            for to in hits_pos {
+                if (1 << to) & attackable_check_pos != 0 {
+                    let (pc, pt) = board.lookup(to);
+                    let (_, att) = match pt {
+                        PieceType::Pawn => self.gen_pawn_moves(&board, to, opp_color), //en_pass??
+                        PieceType::Knight => self.gen_knight_moves(&board, to, opp_color),
+                        PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[opp_color]),
+                        PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
+                        PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[opp_color]),
+                        PieceType::King => self.gen_king_moves(&board, to, opp_color),
+                        PieceType::Empty => panic!("Empty can not check"),
+                    };
+                    if (att & (1 << pos)) != 0 {
+                        //let (cr, cf) = self.gen_check_info(&board, to, pos);
+                        //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
+                        //check_real |= cr;
+                        //check_full |= cf;
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     //Takes in board, determs if check and if so info, and if any castleing valadation
     pub fn calulate_board_info(&self, board: &Board) {
         let mut possable: Vec<(usize, u64)> = vec![];
