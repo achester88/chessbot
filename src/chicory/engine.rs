@@ -109,56 +109,62 @@ impl Engine {
         if can_castle {
             match board.turn {
                 PieceColor::White => {
-                    if board.casling & 0b1000_1000 == 0b1000_1000 {//board.casling & 0b0100 != 0 && board.casling & 0b0100_0000 != 0 { //queenside
+                    if board.casling & 0b0000_1000 == 0b0000_1000 {//board.casling & 0b0100 != 0 && board.casling & 0b0100_0000 != 0 { //queenside
                         let mut new_board = board.castle(88);
 
                         let (_, att) = self.gen_rook_moves(&board, 3, board.pieces[board.turn]);
 
                         if att & 0xc00000000000000 != 0 && new_board.casling & 0b0010 != 0{
                             new_board.casling &= 0b1101_1111;
-                            new_board.casling_attacks[1] |= (1 << 3);
+                            //new_board.casling_attacks[1] |= (1 << 3);
+                        }
+                        if self.can_castle_through(0xc, &board) && (board.occupied & 0xe == 0) {
+                            all_moves.push((88, 88, new_board, None));
                         }
 
-                        all_moves.push((88, 88, new_board, None));
-
                     }
-                    if board.casling & 0b0100_0100 == 0b0100_0100 {
+                    if board.casling & 0b0000_0100 == 0b0000_0100 {
                         let mut new_board = board.castle(80);
 
                         let (_, att) = self.gen_rook_moves(&board, 5, board.pieces[board.turn]);
 
                         if att & 0x6000000000000000 != 0 && new_board.casling & 0b0001 != 0{
                             new_board.casling &= 0b1110_1111;
-                            new_board.casling_attacks[0] |= (1 << 5);
+                            //new_board.casling_attacks[0] |= (1 << 5);
                         }
-
-                        all_moves.push((80, 80, new_board, None));
+                        if self.can_castle_through(0x60, &board) && (board.occupied & 0x60 == 0) {
+                            all_moves.push((80, 80, new_board, None));
+                        }
                     }
                 },
                 PieceColor::Black => {
-                    if board.casling & 0b0010_0010 == 0b0010_0010 { //queenside
+                    if board.casling & 0b0000_0010 == 0b0000_0010 { //queenside
                         let mut new_board = board.castle(88);
 
                         let (_, att) = self.gen_rook_moves(&board, 59, board.pieces[board.turn]);
 
                         if att & 0xc != 0 && new_board.casling & 0b1000 != 0{//Black Queen Side
                             new_board.casling &= 0b0111_1111;
-                            new_board.casling_attacks[3] |= (1 << 59);
+                            //new_board.casling_attacks[3] |= (1 << 59);
                         }
-
-                        all_moves.push((88, 88, new_board, None));
+                        
+                        if self.can_castle_through(0xc00000000000000, &board) && (board.occupied & 0xe00000000000000 == 0) {
+                            all_moves.push((88, 88, new_board, None));
+                        }
                     }
-                    if board.casling & 0b0001_0001 == 0b0001_0001 { //kingside
+                    if board.casling & 0b0000_0001 == 0b0000_0001 { //kingside
                         let mut new_board = board.castle(80);
 
                         let (_, att) = self.gen_rook_moves(&board, 61, board.pieces[board.turn]);
 
                         if att & 0x60 != 0 && new_board.casling & 0b0100 != 0 {//Black King Side
                             new_board.casling &= 0b1011_1111;
-                            new_board.casling_attacks[2] |= (1 << 61);
+                            //new_board.casling_attacks[2] |= (1 << 61);
                         }
 
-                        all_moves.push((80, 80, new_board, None));
+                        if self.can_castle_through(0x6000000000000000, &board) && (board.occupied & 0x6000000000000000 == 0) {
+                            all_moves.push((80, 80, new_board, None));
+                        }
                     }
                 }
             }
@@ -192,10 +198,10 @@ impl Engine {
 
                     //Resets caslting info is a piece is moved that affects it
                     if change & all_caslt_spots != 0 {
-                        new_board.casling_attacks[0] &= !change;
-                        new_board.casling_attacks[1] &= !change;
-                        new_board.casling_attacks[2] &= !change;
-                        new_board.casling_attacks[3] &= !change;
+                        //new_board.casling_attacks[0] &= !change;
+                        //new_board.casling_attacks[1] &= !change;
+                        //new_board.casling_attacks[2] &= !change;
+                        //new_board.casling_attacks[3] &= !change;
 
                         if new_board.casling_attacks[0] == 0 && (new_board.casling & 0b0001) != 0 {
                             new_board.casling |= 0b0001_0000;
@@ -213,10 +219,10 @@ impl Engine {
                     }
 
                     if change & all_block_spots != 0 {
-                        new_board.casling_blocks[0] &= !change;
-                        new_board.casling_blocks[1] &= !change;
-                        new_board.casling_blocks[2] &= !change;
-                        new_board.casling_blocks[3] &= !change;
+                        //new_board.casling_blocks[0] &= !change;
+                        //new_board.casling_blocks[1] &= !change;
+                        //new_board.casling_blocks[2] &= !change;
+                        //new_board.casling_blocks[3] &= !change;
 
                         if new_board.casling_blocks[0] == 0 && new_board.casling_attacks[0] != 0 && (new_board.casling & 0b0001) != 0 {
                             new_board.casling &= 0b1110_1111;
@@ -256,20 +262,20 @@ impl Engine {
                             //Find Square
                             if att & 0x6000000000000000 != 0 && new_board.casling & 0b0001 != 0 {//Black King Side
                                 new_board.casling &= 0b1110_1111;
-                                new_board.casling_attacks[0] |= (1 << to);
+                                //new_board.casling_attacks[0] |= (1 << to);
                             }
                             if att & 0xc00000000000000 != 0 && new_board.casling & 0b0010 != 0 {//Black Queen Side
                                 new_board.casling &= 0b1101_1111;
-                                new_board.casling_attacks[1] |= (1 << to);
+                                //new_board.casling_attacks[1] |= (1 << to);
                             }
 
                             if att & 0x60 != 0 && new_board.casling & 0b0100 != 0 {//White King Side
                                 new_board.casling &= 0b1011_1111;
-                                new_board.casling_attacks[2] |= (1 << to);
+                                //new_board.casling_attacks[2] |= (1 << to);
                             }
                             if att & 0xc != 0 && new_board.casling & 0b1000 != 0{//White Queen Side
                                 new_board.casling &= 0b0111_1111;
-                                new_board.casling_attacks[3] |= (1 << to);
+                                //new_board.casling_attacks[3] |= (1 << to);
                             }
                         }
                         //new_board.occupied
@@ -294,7 +300,7 @@ impl Engine {
                                         _ => break
                                     };
                                     if att & new_board.casling_attacks[i] != 0 {
-                                        new_board.casling_blocks[i] |= (1 << to);
+                                        //new_board.casling_blocks[i] |= (1 << to);
                                         new_board.casling |= shifts[i];
                                     }
                                 }
@@ -369,6 +375,44 @@ impl Engine {
 
         return all_moves;
     }
+    
+    pub fn can_castle_through(&self, pos: u64, board: &Board) -> bool {
+        let sq = board_serialize(pos);
+        let opp_color = !board.turn;
+
+        for i in sq {
+            let attackable_check_pos = self.gen_king_attackables(i);
+
+            let hits = attackable_check_pos & board.pieces[!board.turn];
+
+            let hits_pos = board_serialize(hits);
+
+            for to in hits_pos {
+                if (1 << to) & attackable_check_pos != 0 {
+                    let (pc, pt) = board.lookup(to);
+                    let (_, att) = match pt {
+                        PieceType::Pawn => (0, self.pawn_attacks[opp_color as usize][to]),//self.gen_pawn_moves(&board, to, opp_color), //en_pass??
+                        PieceType::Knight => self.gen_knight_moves(&board, to, opp_color),
+                        PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[opp_color]),
+                        PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
+                        PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[opp_color]),
+                        PieceType::King => self.gen_king_moves(&board, to, opp_color),
+                        PieceType::Empty => panic!("Empty can not check"),
+                    };
+                    if (att & (1 << i)) != 0 {
+                        //let (cr, cf) = self.gen_check_info(&board, to, pos);
+                        //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
+                        //check_real |= cr;
+                        //check_full |= cf;
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     //Takes in board, determs if check and if so info, and if any castleing valadation
     pub fn calulate_board_info(&self, board: &Board) {
         let mut possable: Vec<(usize, u64)> = vec![];
@@ -640,12 +684,12 @@ impl Engine {
                             if att & 0x6000000000000000 != 0 && casling & 0b0001 != 0 { //Black King Side
                                 //println!("BK");
                                 casling &= 0b1110_1111;
-                                casling_attacks[0] |= (1 << pos);
+                                //casling_attacks[0] |= (1 << pos);
                             }
                             if att & 0xc00000000000000 != 0 && casling & 0b0010 != 0 { //Black Queen Side
                                 //println!("BQ");
                                 casling &= 0b1101_1111;
-                                casling_attacks[1] |= (1 << pos);
+                                //casling_attacks[1] |= (1 << pos);
                             }
                         }
                     },
@@ -654,11 +698,11 @@ impl Engine {
                         if hit_rank {
                             if att & 0x60 != 0 && casling & 0b0100 != 0 { //White King Side
                                 casling &= 0b1011_1111;
-                                casling_attacks[2] |= (1 << pos);
+                                //casling_attacks[2] |= (1 << pos);
                             }
                             if att & 0xc != 0 && casling & 0b1000 != 0 { //White Queen Side
                                 casling &= 0b0111_1111;
-                                casling_attacks[3] |= (1 << pos);
+                                //casling_attacks[3] |= (1 << pos);
                             }
                         }
                     }
@@ -677,21 +721,21 @@ impl Engine {
                 if blockers_pos_board == 0 {
                     if cast & 0x60 != 0 {
                         casling &= 0b1011_1111;
-                        casling_attacks[2] |= (1 << pos);
+                        //casling_attacks[2] |= (1 << pos);
                     } else if cast & 0xc != 0 {
                         casling &= 0b0111_1111;
-                        casling_attacks[3] |= (1 << pos);
+                        //casling_attacks[3] |= (1 << pos);
                     }
                 } else {
                     let blockers_pos = board_serialize(blockers_pos_board);
                     if cast & 0x60 != 0 {
                         println!("Castling");
 
-                        casling_blockers[2] |= blockers_pos_board;
-                        casling_attacks[2] |= (1 << pos);
+                        //casling_blockers[2] |= blockers_pos_board;
+                        //casling_attacks[2] |= (1 << pos);
                     } else if cast & 0xc != 0 {
-                        casling_blockers[3] |= blockers_pos_board;
-                        casling_attacks[3] |= (1 << pos);
+                        //casling_blockers[3] |= blockers_pos_board;
+                        //casling_attacks[3] |= (1 << pos);
                     }
                 }
 

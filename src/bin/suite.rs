@@ -138,9 +138,11 @@ fn main()-> ExitCode {
     println!("\x1b[1;32mPassed\x1b[0m: {} ({}%)", results[0], calc_perc(results[0], test_done));
     println!("\x1b[1;33mAcceptable\x1b[0m: {} ({}%)", results[1], calc_perc(results[1], test_done));
     println!("\x1b[1;31mFailed\x1b[0m: {} ({}%)\n", results[2], calc_perc(results[2], test_done));
-    println!("Smallest: |{}|", smallest.clone().unwrap().fen);
-    println!("  Depth: {}", smallest_i);
-    println!("  Expected: {}", smallest.unwrap().node_count[smallest_i]);
+    if smallest.is_some() {
+        println!("Smallest: |{}|", smallest.clone().unwrap().fen);
+        println!("  Depth: {}", smallest_i);
+        println!("  Expected: {}", smallest.unwrap().node_count[smallest_i]);
+    }
     println!("\n-----------------------------------------------------");
 
 
