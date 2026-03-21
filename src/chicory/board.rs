@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use super::bitboard::{print_bitboard, print_bitboard_pos};
 use core::ops::{Index, IndexMut, Not};
 use crate::chicory::bitboard::board_serialize;
@@ -18,12 +19,6 @@ pub enum PieceType {
     Rook,
     Queen,
     King,
-    Empty,
-}
-
-enum OP {
-    AND,
-    OR,
 }
 
 impl Index<PieceColor> for [u64] {
@@ -67,10 +62,10 @@ pub struct Board {
     pub kings: [u64; 2],
 
     pub turn: PieceColor,
-    pub casling: u8,    //white, black | queenside, kingside QKqk
-    pub casling_attacks: [u64; 4],
-    pub casling_blocks: [u64; 4],
-    pub en_passant: u8, //postion of avilbe en passant
+    pub castling: u8,    //white, black | queenside, kingside QKqk
+    pub castling_attacks: [u64; 4],
+    pub castling_blocks: [u64; 4],
+    pub en_passant: u8, //position of available en passant
     pub check_real: u64, //TODO USE BOOL AND CAL AS NEEDED
     pub check_full: u64,
     pub half_moves: u16,
@@ -94,17 +89,15 @@ impl Board {
         let mut br = 0;
         let mut bq = 0;
         let mut bk = 0;
-        let mut wt = true;
-        let mut casling: u8 = 0;
+        let mut castling: u8 = 0;
         let mut ep: u8 = 65;
         let mut hm = 0;
         let mut fm = 1;
-        let mut i = 64;
         let mut f = 0;
         let mut r = 7;
         let fen: Vec<&str> = fen_str.split(" ").collect();
 
-        //postion
+        //position
         let pos = fen[0]; //fen[0].replace("/", "");
         let pos_vec: Vec<char> = pos.chars().collect();
         for c in pos_vec {
@@ -117,7 +110,6 @@ impl Board {
             } else {
                 let s = 1 << ((r * 8) + f); //set bit of i;
                                             //(1 << n)
-                                            //print_bitboard(s);
                 match c {
                     'P' => wp = wp | s,
                     'B' => wb = wb | s,
@@ -139,14 +131,12 @@ impl Board {
                 f += 1;
             }
         }
-        //turn
-        wt = fen[1] == "w";
 
         //casling
         if fen[2] != "-" {
             let cal: Vec<char> = fen[2].chars().collect();
             for c in cal {
-                casling |= match c {
+                castling |= match c {
                     'Q' => 1 << 3,
                     'K' => 1 << 2,
                     'q' => 1 << 1,
@@ -182,14 +172,14 @@ impl Board {
             rooks: [wr, br],
             queens: [wq, bq],
             kings: [wk, bk],
-            turn: if wt {
+            turn: if fen[1] == "w" {
                 PieceColor::White
             } else {
                 PieceColor::Black
             },
-            casling: 0b1111_0000 | casling,
-            casling_attacks: [0; 4],
-            casling_blocks: [0; 4],
+            castling: 0b1111_0000 | castling,
+            castling_attacks: [0; 4],
+            castling_blocks: [0; 4],
             check_real: 0,
             check_full: 0,
             en_passant: ep,
@@ -201,20 +191,20 @@ impl Board {
 
         let (casl, casl_att, _) = engine.gen_init_casling_info(&new_board, PieceColor::White);
 
-        new_board.casling &= casl;
-        new_board.casling_attacks[0] = casl_att[0];
-        new_board.casling_attacks[1] = casl_att[1];
+        new_board.castling &= casl;
+        new_board.castling_attacks[0] = casl_att[0];
+        new_board.castling_attacks[1] = casl_att[1];
 
         let (casl, casl_att, blockers) = engine.gen_init_casling_info(&new_board, PieceColor::Black);
 
-        new_board.casling &= casl;
-        new_board.casling_attacks[2] = casl_att[2];
-        new_board.casling_attacks[3] = casl_att[3];
+        new_board.castling &= casl;
+        new_board.castling_attacks[2] = casl_att[2];
+        new_board.castling_attacks[3] = casl_att[3];
 
-        new_board.casling_blocks = blockers;
+        new_board.castling_blocks = blockers;
 
         let king_board = new_board.kings[new_board.turn];
-        if (king_board != 0) {
+        if king_board != 0 {
             let king_pos = board_serialize(king_board);
 
             let (cr, cf) = engine.cal_check(&new_board, king_pos[0], !new_board.turn);
@@ -223,20 +213,13 @@ impl Board {
             new_board.check_full = cf;
         }
 
-        return new_board;
+        new_board
     }
-
-    /*fn get_pieces(&self, color: PieceColor, type_of: PieceType) -> u64 {
-        match type_of {
-            PieceType::Pawn => self.pawns[color],
-            _ => 0
-        }
-    }*/
 
     pub fn lookup(&self, pos: usize) -> (PieceColor, PieceType) {
         let board = 1 << pos;
 
-        let mut color: PieceColor;
+        let color: PieceColor;
 
         if board & self.pieces[PieceColor::White] != 0 {
             //White
@@ -248,25 +231,24 @@ impl Board {
 
         if board & (self.pawns[color] | self.bishops[color] | self.knights[color]) != 0 {
             if board & self.pawns[color] != 0 {
-                return (color, PieceType::Pawn);
+                (color, PieceType::Pawn)
             } else if board & self.bishops[color] != 0 {
-                return (color, PieceType::Bishop);
+                (color, PieceType::Bishop)
             } else {
                 //knights
-                return (color, PieceType::Knight);
+                (color, PieceType::Knight)
             }
         } else {
             if board & self.rooks[color] != 0 {
-                return (color, PieceType::Rook);
+                (color, PieceType::Rook)
             } else if board & self.queens[color] != 0 {
-                return (color, PieceType::Queen);
+                (color, PieceType::Queen)
             } else {
-                //kings
-                return (color, PieceType::King);
+                //king
+                (color, PieceType::King)
             }
         }
 
-        return (PieceColor::White, PieceType::Empty);
     }
 
     pub fn move_piece(&self, to: usize, from: usize) -> Board {
@@ -279,43 +261,43 @@ impl Board {
         new_board.en_passant_check(to, from, &pt);
 
         //CHECK FOR CHECK
-        if new_board.casling != 0 && (pt == PieceType::Rook || pt == PieceType::King) {
+        if new_board.castling != 0 && (pt == PieceType::Rook || pt == PieceType::King) {
             if pt == PieceType::King {
                 let values; 
                 match pc {
                     PieceColor::White => {
                         values = 0b0011_0011;
-                        new_board.casling_attacks[2] = 0;
-                        new_board.casling_attacks[3] = 0;
+                        new_board.castling_attacks[2] = 0;
+                        new_board.castling_attacks[3] = 0;
                     },
                     PieceColor::Black => {
                         values = 0b1100_1100;
-                        new_board.casling_attacks[0] = 0;
-                        new_board.casling_attacks[1] = 0;
+                        new_board.castling_attacks[0] = 0;
+                        new_board.castling_attacks[1] = 0;
 
                     }
                 };
 
-                new_board.casling &= values;
+                new_board.castling &= values;
             } else {
-                //if rook cencel side its on
-                //check if from mathces
+                //if rook cancel side its on
+                //check if from matches
                 match from {
                     0 => {
-                        new_board.casling &= 0b0111_0111;
-                        new_board.casling_attacks[3] = 0; 
+                        new_board.castling &= 0b0111_0111;
+                        new_board.castling_attacks[3] = 0;
                     }, //white queenside
                     7 => {
-                        new_board.casling &= 0b1011_1011;
-                        new_board.casling_attacks[2] = 0;
+                        new_board.castling &= 0b1011_1011;
+                        new_board.castling_attacks[2] = 0;
                     }, //white kingside
                     56 => {
-                        new_board.casling &= 0b1101_1101;
-                        new_board.casling_attacks[1] = 0; 
+                        new_board.castling &= 0b1101_1101;
+                        new_board.castling_attacks[1] = 0;
                     }, //black queenside
                     63 => {
-                        new_board.casling &= 0b1110_1110;
-                        new_board.casling_attacks[0] = 0; 
+                        new_board.castling &= 0b1110_1110;
+                        new_board.castling_attacks[0] = 0;
                     }, //black kingside
                     _ => {}
                 };
@@ -325,15 +307,15 @@ impl Board {
             //white = 11
         }
 
-        if (new_board.casling & 0b0000_1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && old_pt == PieceType::Rook {
+        if (new_board.castling & 0b0000_1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && old_pt == PieceType::Rook {
             if to == 0 {
-                new_board.casling &= 0b0111_0111;
+                new_board.castling &= 0b0111_0111;
             } else if to == 7 {
-                new_board.casling &= 0b1011_1011;
+                new_board.castling &= 0b1011_1011;
             } else if to == 56 {
-                new_board.casling &= 0b1101_1101;
+                new_board.castling &= 0b1101_1101;
             } else if to == 63 {
-                new_board.casling &= 0b1110_1110;
+                new_board.castling &= 0b1110_1110;
             }
         }
 
@@ -347,32 +329,6 @@ impl Board {
         new_board.recalc_board();
 
         new_board.next_turn();
-
-        return new_board;
-    }
-
-    pub fn move_lan(&self, engine: &Engine, str: &str) -> Board {
-
-        let from = Board::lan_to_pos(&str[0..2]);
-        let to = Board::lan_to_pos(&str[2..4]);
-
-        let mut new_board = self.move_piece(to, from);
-
-        let (casl, casl_att, bloc) = engine.gen_init_casling_info(&new_board, !new_board.turn);
-
-        new_board.casling = casl;
-        new_board.casling_attacks = casl_att;
-        new_board.casling_blocks = bloc;
-
-        let king_board = new_board.kings[new_board.turn];
-        if (king_board != 0) {
-            let king_pos = board_serialize(king_board);
-
-            let (cr, cf) = engine.cal_check(&new_board, king_pos[0], !new_board.turn);
-
-            new_board.check_real = cr;
-            new_board.check_full = cf;
-        }
 
         new_board
     }
@@ -398,7 +354,6 @@ impl Board {
                 //white
                 self.en_passant = (to as u8) - 8; //south_one
             } else if to < 48 && (to + 16) == from && from > 47 && from < 56 {
-                //println!("NEW EN");
                 //black
                 self.en_passant = (to as u8) + 8; //north_one
             } else {
@@ -418,7 +373,6 @@ impl Board {
             PieceType::Rook => self.rooks[pc] = self.rooks[pc] & !(1 << pos),
             PieceType::Queen => self.queens[pc] = self.queens[pc] & !(1 << pos),
             PieceType::King => self.kings[pc] = self.kings[pc] & !(1 << pos),
-            PieceType::Empty => (),
         };
     }
 
@@ -430,7 +384,6 @@ impl Board {
             PieceType::Rook => self.rooks[pc] = self.rooks[pc] | (1 << pos),
             PieceType::Queen => self.queens[pc] = self.queens[pc] | (1 << pos),
             PieceType::King => self.kings[pc] = self.kings[pc] | (1 << pos),
-            PieceType::Empty => (),
         };
     }
 
@@ -460,15 +413,15 @@ impl Board {
         let (pc, pt) = new_board.lookup(from);
         let (old_pc, old_pt) = new_board.lookup(to);
 
-        if (new_board.casling & 0b0000_1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && old_pt == PieceType::Rook {
+        if (new_board.castling & 0b0000_1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && old_pt == PieceType::Rook {
             if to == 0 {
-                new_board.casling &= 0b0111_0111;
+                new_board.castling &= 0b0111_0111;
             } else if to == 7 {
-                new_board.casling &= 0b1011_1011;
+                new_board.castling &= 0b1011_1011;
             } else if to == 56 {
-                new_board.casling &= 0b1101_1101;
+                new_board.castling &= 0b1101_1101;
             } else if to == 63 {
-                new_board.casling &= 0b1110_1110;
+                new_board.castling &= 0b1110_1110;
             }
         }
 
@@ -502,7 +455,7 @@ impl Board {
         out.push((from, to, new_boards[3], Some(PieceType::Queen) ));
 
 
-        return out;
+        out
     }
 
     pub fn castle(&self, code: u8) -> Board {
@@ -529,7 +482,7 @@ impl Board {
                     king_to_pos = 6;
                 }
 
-                new_board.casling &= 0b0011_0011;
+                new_board.castling &= 0b0011_0011;
             },
             PieceColor::Black => {
                 king_from_pos = 60;
@@ -545,7 +498,7 @@ impl Board {
                     king_to_pos = 62;
                 }
 
-                new_board.casling &= 0b1100_1100;
+                new_board.castling &= 0b1100_1100;
             }
         }
 
@@ -561,7 +514,7 @@ impl Board {
 
         new_board.next_turn();
 
-        return new_board;
+        new_board
     }
 
     fn next_turn(&mut self)  {
@@ -628,6 +581,7 @@ impl Board {
         [Board::pos_to_lan(*from), Board::pos_to_lan(*to), promo_to].join("")
     }
 
+    #[allow(dead_code)]
     pub fn print_board(&self) {
         let set = [["P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"], 
                    ["󰡙", "󰡘", "󰡜", "󰡛", "󰡚", "󰡗", "", "", "", "", "", ""]
@@ -637,11 +591,11 @@ impl Board {
 
         println!(
             "\n{} to move:",
-            (if self.turn == PieceColor::White {
+            if self.turn == PieceColor::White {
                 "White"
             } else {
                 "Black"
-            })
+            }
         );
         println!("-----");
         for r in [7, 6, 5, 4, 3, 2, 1, 0] {
@@ -686,22 +640,22 @@ impl Board {
         println!("-----");
         println!(
             "Castling Rights: {}{} {}{}",
-            if self.casling & 0b1000 != 0 {
+            if self.castling & 0b1000 != 0 {
                 "Q"
             } else {
                 "-"
             },
-            if self.casling & 0b0100 != 0 {
+            if self.castling & 0b0100 != 0 {
                 "K"
             } else {
                 "-"
             },
-            if self.casling & 0b0010 != 0 {
+            if self.castling & 0b0010 != 0 {
                 "q"
             } else {
                 "-"
             },
-            if self.casling & 0b0001 != 0 {
+            if self.castling & 0b0001 != 0 {
                 "k"
             } else {
                 "-"
@@ -709,22 +663,22 @@ impl Board {
         );
         println!(
             "Temp Castling Rights: {}{} {}{}",
-            if self.casling & 0b1000_0000 != 0 {
+            if self.castling & 0b1000_0000 != 0 {
                 "Q"
             } else {
                 "-"
             },
-            if self.casling & 0b0100_0000 != 0 {
+            if self.castling & 0b0100_0000 != 0 {
                 "K"
             } else {
                 "-"
             },
-            if self.casling & 0b0010_0000 != 0 {
+            if self.castling & 0b0010_0000 != 0 {
                 "q"
             } else {
                 "-"
             },
-            if self.casling & 0b0001_0000 != 0 {
+            if self.castling & 0b0001_0000 != 0 {
                 "k"
             } else {
                 "-"

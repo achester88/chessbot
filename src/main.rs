@@ -6,17 +6,14 @@ use engine::*;
 use eval::minmax;
 use uci_interface::*;
 use std::io::{stdin, stdout, Write};
-use std::rc::{Rc, Weak};
-use std::sync::mpsc;
-use std::{panic, thread};
-use std::time::{Duration, Instant};
+use std::{thread};
+//use std::time::{Instant};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{Receiver, Sender};
 use chicory::eval::eval;
 
 fn main() {
-    let (tx, rx): (Sender<Cmd>, Receiver<Cmd>) = mpsc::channel();
+    //let (tx, rx): (Sender<Cmd>, Receiver<Cmd>) = mpsc::channel();
 
     let eng = Engine::new(); //replace with ref or something :(
 
@@ -25,7 +22,7 @@ fn main() {
 
     //TODO lock best move on search start and release after stop CMD
 
-    let stop_calculation = Arc::new(AtomicBool::new(false));;//Rc::new(false);//Arc::new(Mutex::new(false));
+    let stop_calculation = Arc::new(AtomicBool::new(false));
     let finished_calculation = Arc::new(AtomicBool::new(false));
 
     let mut interface = UciInterface::new();
@@ -49,8 +46,6 @@ fn main() {
         };
 
         if cmd_out.is_some() {
-            let cmd = cmd_out.clone().unwrap();
-            tx.send(cmd).unwrap();
 
             match cmd_out.unwrap() {
                 Cmd::GoInf => {
@@ -69,10 +64,9 @@ fn main() {
                         let engine = Engine::new();
 
                         while !stop_calculation_clone.load(Ordering::Relaxed) && !self_stop {
-                            let moves = engine.gen_moves(cal_board.unwrap());
 
                             //cur_best_move = Some(new_move[0]);
-                            let (score, best_move, _) = minmax(&engine, cal_board.unwrap(), interface.search_depth, -f32::INFINITY, f32::INFINITY, cal_board.unwrap().turn, 1, true);
+                            let (_, best_move, _) = minmax(&engine, cal_board.unwrap(), interface.search_depth, -f32::INFINITY, f32::INFINITY, cal_board.unwrap().turn, 1, true);
                             println!("info score cp {}", eval(&best_move.unwrap().2, true));
                             cur_best_move = best_move;
                             self_stop = true;
@@ -84,13 +78,13 @@ fn main() {
 
 
                     });
-                    let start = Instant::now();
+                    //let start = Instant::now();
 
                     while !finished_calculation.load(Ordering::Relaxed) {
                     }
 
                     let best_move_lock = best_move.lock().unwrap();
-                    let (from, to, board, promo) = *best_move_lock;
+                    let (_, _, board, _) = *best_move_lock;
                     println!("bestmove {}", Board::move_to_lan(&*best_move_lock));
                     interface.current_board = Some(board);
                     finished_calculation.store(false, Ordering::Relaxed);

@@ -1,14 +1,9 @@
-/*
-  TO USE RUN
-    cargo run -- {filename.epd}
- */
-
+use std::cmp::PartialEq;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::{env, thread};
+use std::env;
 use std::process::ExitCode;
-use std::sync::mpsc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use chicory::chicory::board::Board;
 use chicory::chicory::engine::Engine;
 use chicory::chicory::perft::multi_perft;
@@ -19,23 +14,20 @@ struct LineInfo {
     node_count: Vec<usize>,
 }
 
+#[derive(PartialEq)]
 enum Status {
     Passed,
-    Acceptable,
-    Failed
+    Under,
+    Over
 }
 
-fn main()-> ExitCode {
+fn main() -> ExitCode {
 
     let args: Vec<String> = env::args().collect();
-
     let depth_limit = args[2].parse().unwrap();
-
     let file = File::open(args[1].clone()).unwrap();
     let reader = BufReader::new(file);
-
     let mut tests: Vec<LineInfo> = vec![];
-
     let mut total_test = 0;
 
     for line_result in reader.lines() {
@@ -46,35 +38,19 @@ fn main()-> ExitCode {
         tests.push(data);
     }
 
-    /*
-    let engine = Engine::new();
-    let board = Board::new("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 1 1", &engine);
-
-    let result = multi_perft(&engine, board, 2, 7);
-
-    println!("R: {}, E: {}", result, 2039);
-
-    return ExitCode::SUCCESS;
-    */
-
-
-
     println!("--------------------------------------------------");
     println!("Starting Perft Testing Suite\n");
     println!("Total Positions: {:?}", tests.len());
     println!("Total Tests Loaded: {:?}", total_test);
     println!("--------------------------------------------------");
 
-    //Passed, Acceptable, Failed
+    //Passed, Under, Over
     let mut results = vec!(0, 0, 0);
     let engine = Engine::new();
     let mut smallest: Option<LineInfo> = None;
     let mut smallest_i = 0;
-
     let mut test_done = 0;
-
     let full_start = Instant::now();
-
     let mut c = 0;
 
     while c < tests.len() {
@@ -86,41 +62,36 @@ fn main()-> ExitCode {
         let mut i = 0;
         while i < test.node_count.len() && i <= depth_limit {
             print!("    D{} ", i);
-            let count = multi_perft(&engine, board, i, 8);//perft(&engine, board, i);
-            match check_outcome(count, test.node_count[i]) {
+            let count = multi_perft(&engine, board, i, 8); //perft(&engine, board, i);
+            let outcome = check_outcome(count, test.node_count[i]);
+
+            if outcome != Status::Passed {
+                if smallest.is_none() == true {
+                    smallest = Some(test.clone());
+                    smallest_i = i;
+                } else if test.node_count[i] < smallest.clone().unwrap().node_count[smallest_i] {
+                    smallest = Some(test.clone());
+                    smallest_i = i;
+                }
+            }
+
+            match outcome {
                 Status::Passed => {
                     println!(" \x1b[1;32mPassed\x1b[0m");
                     results[0] += 1;
                 },
-                Status::Acceptable => {
-                    println!(" \x1b[1;33mAcceptable\x1b[0m ({}%)", calc_over_under(count, test.node_count[i]));
+                Status::Under => {
+                    println!(" \x1b[1;33mUnder\x1b[0m ({}%)", calc_over_under(count, test.node_count[i]));
                     results[1] += 1;
-
-                    if smallest.is_none() == true {
-                        smallest = Some(test.clone());
-                        smallest_i = i;
-                    } else if test.node_count[i] < smallest.clone().unwrap().node_count[smallest_i] {
-                        smallest = Some(test.clone());
-                        smallest_i = i;
-                    }
                 },
-                Status::Failed => {
-                    println!(" \x1b[1;31mFailed\x1b[0m ({}%)", calc_over_under(count, test.node_count[i]));
+                Status::Over => {
+                    println!(" \x1b[1;31mOver\x1b[0m ({}%)", calc_over_under(count, test.node_count[i]));
                     results[2] += 1;
-
-                    if smallest.is_none() == true {
-                        smallest = Some(test.clone());
-                        smallest_i = i;
-                    } else if test.node_count[i] < smallest.clone().unwrap().node_count[smallest_i] {
-                        smallest = Some(test.clone());
-                        smallest_i = i;
-                    }
                 }
             }
 
             println!("      {} of {}", count, test.node_count[i]);
 
-            //println!();
             test_done += 1;
             i += 1;
         }
@@ -136,8 +107,8 @@ fn main()-> ExitCode {
     println!("Total Test Done: {:?}", test_done);
     println!("Total Time: {:?}(s)\n", full_start.elapsed().as_secs_f64());
     println!("\x1b[1;32mPassed\x1b[0m: {} ({}%)", results[0], calc_perc(results[0], test_done));
-    println!("\x1b[1;33mAcceptable\x1b[0m: {} ({}%)", results[1], calc_perc(results[1], test_done));
-    println!("\x1b[1;31mFailed\x1b[0m: {} ({}%)\n", results[2], calc_perc(results[2], test_done));
+    println!("\x1b[1;33mUnder\x1b[0m: {} ({}%)", results[1], calc_perc(results[1], test_done));
+    println!("\x1b[1;31mOver\x1b[0m: {} ({}%)\n", results[2], calc_perc(results[2], test_done));
     if smallest.is_some() {
         println!("Smallest: |{}|", smallest.clone().unwrap().fen);
         println!("  Depth: {}", smallest_i);
@@ -146,7 +117,7 @@ fn main()-> ExitCode {
     println!("\n-----------------------------------------------------");
 
 
-    if results[2] == 0 {
+    if results[1] == 0 && results[2] == 0 {
         ExitCode::SUCCESS
     } else {
         ExitCode::FAILURE
@@ -154,11 +125,8 @@ fn main()-> ExitCode {
 
 }
 
-//fn calc_percent
-
-fn calc_perc(ammount: usize, total: usize) -> f32 {
-
-    (ammount as f32 / total as f32) * 100.0
+fn calc_perc(amount: usize, total: usize) -> f32 {
+    (amount as f32 / total as f32) * 100.0
 }
 
 fn calc_over_under(res: usize, expt: usize) -> f32 {
@@ -172,9 +140,9 @@ fn check_outcome(res: usize, expt: usize) -> Status {
     if res == expt {
         Status::Passed
     } else if res < expt {
-        Status::Acceptable
+        Status::Under
     } else {
-        Status::Failed
+        Status::Over
     }
 }
 
@@ -196,10 +164,13 @@ fn read_line(prompt: &str) -> LineInfo {
         i += 1;
     }
 
-
-
     LineInfo {
         fen: String::from(fen),
         node_count: node_count.clone(),
     }
 }
+
+/*
+  TO USE RUN
+    cargo run -- [filename.epd] [depth]
+*/
