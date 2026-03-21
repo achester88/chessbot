@@ -22,7 +22,6 @@ pub struct Engine {
     pawn_attacks: Vec<Vec<u64>>,
     king_attacks: Vec<u64>,
     knight_attacks: Vec<u64>,
-    //castle_squares: Vec<Vec<u64>>,
 }
 
 impl Engine {
@@ -37,23 +36,23 @@ impl Engine {
     //from, to, new board
     pub fn gen_moves(&self, board: Board) -> Vec<Move> {
         let mut all_moves: Vec<Move> = vec![];
-        let mut possable: Vec<(usize, u64)> = vec![];
+        let mut possible: Vec<(usize, u64)> = vec![];
 
         //######### BASIC MOVE GEN #########
 
         let queens = board_serialize(board.queens[board.turn]);
         for i in queens {
-            possable.push(self.gen_queen_moves(&board, i, board.pieces[board.turn]));
+            possible.push(self.gen_queen_moves(&board, i, board.pieces[board.turn]));
         }
 
         let bishops = board_serialize(board.bishops[board.turn]);
         for i in bishops {
-            possable.push(self.gen_bishop_moves(&board, i, board.pieces[board.turn]));
+            possible.push(self.gen_bishop_moves(&board, i, board.pieces[board.turn]));
         }
 
         let rooks = board_serialize(board.rooks[board.turn]);
         for i in rooks {
-            possable.push(self.gen_rook_moves(&board, i, board.pieces[board.turn]));
+            possible.push(self.gen_rook_moves(&board, i, board.pieces[board.turn]));
         }
 
         let pawns = board_serialize(board.pawns[board.turn]);
@@ -66,7 +65,7 @@ impl Engine {
                     all_moves.append(&mut (board.promote(from, to))); //64 out of range, no piece
                 }
             } else {
-                possable.push((from, moves));
+                possible.push((from, moves));
             }
         }
 
@@ -90,13 +89,13 @@ impl Engine {
             }
         } else {
             for i in kings {
-                possable.push(self.gen_king_moves(&board, i, board.turn));
+                possible.push(self.gen_king_moves(&board, i, board.turn));
             }
         }
 
         let knight = board_serialize(board.knights[board.turn]);
         for i in knight {
-            possable.push(self.gen_knight_moves(&board, i, board.turn));
+            possible.push(self.gen_knight_moves(&board, i, board.turn));
         }
 
         //######### Castle Logic #########
@@ -127,8 +126,8 @@ impl Engine {
         let king_pos = board_serialize(board.kings[!board.turn]);
 
         //######### New Board Gen Loop #########
-        for i in 0..possable.len() {
-            let (from, moves) = possable[i];
+        for i in 0..possible.len() {
+            let (from, moves) = possible[i];
             let moves_to = board_serialize(moves);
 
             for ii in 0..moves_to.len() {
@@ -206,7 +205,7 @@ impl Engine {
             }
         }
 
-        return true;
+        true
     }
 
     pub fn gen_knight_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
@@ -217,7 +216,7 @@ impl Engine {
         };
         let attacks = self.knight_attacks[sq] & (!board.occupied | opp);
 
-        return (sq, attacks);
+        (sq, attacks)
     }
     
     pub fn gen_king_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
@@ -229,7 +228,7 @@ impl Engine {
         
         let attacks = self.king_attacks[sq] & (!board.occupied | opp);
         
-        return (sq, attacks);
+        (sq, attacks)
     }
     
     pub fn gen_pawn_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
@@ -266,7 +265,7 @@ impl Engine {
         }
 
         //
-        return (sq, moves);
+        (sq, moves)
     }
 
     pub fn gen_rook_moves(&self, board: &Board, sq: usize, pieces: u64) -> (usize, u64) {
@@ -277,7 +276,7 @@ impl Engine {
 
         let attack = all_moves & !pieces;
 
-        return (sq, attack); //board_serialize(attack);
+        (sq, attack)
     }
 
     pub fn gen_bishop_moves(&self, board: &Board, sq: usize, pieces: u64) -> (usize, u64) {
@@ -288,14 +287,14 @@ impl Engine {
 
         let attack = all_moves & !pieces;
 
-        return (sq, attack); //board_serialize(attack);
+        (sq, attack)
     }
 
     pub fn gen_queen_moves(&self, board: &Board, sq: usize, pieces: u64) -> (usize, u64) {
         let attack =
             self.gen_rook_moves(board, sq, pieces).1 | self.gen_bishop_moves(board, sq, pieces).1;
 
-        return (sq, attack); //board_serialize(attack);
+        (sq, attack)
     }
 
     pub fn cal_check(&self, board: &Board, pos: usize, opp_color: PieceColor) -> (u64, u64) {
@@ -342,7 +341,7 @@ impl Engine {
             self.ray_attacks[Dir::NOWE as usize][pos] |
             self.knight_attacks[pos];
 
-        return board;
+        board
     }
 
     pub fn gen_check_info(&self, board: &Board, pos: usize, king_pos: usize) -> (u64, u64) {
@@ -405,7 +404,7 @@ impl Engine {
             }
             attack = attack ^ set[stop];
         }
-        return attack;
+        attack
     }
 
 }
@@ -499,7 +498,7 @@ fn gen_ray_attacks() -> Vec<Vec<u64>> {
         }
     }
 
-    return attacks;
+    attacks
 }
 
 fn gen_pawn_attacks() -> Vec<Vec<u64>> {
@@ -519,7 +518,7 @@ fn gen_pawn_attacks() -> Vec<Vec<u64>> {
             postshift::so_ea_one(bb) | postshift::so_we_one(bb);
     }
 
-    return attacks;
+    attacks
 }
 
 fn gen_king_attacks() -> Vec<u64> {
@@ -535,7 +534,7 @@ fn gen_king_attacks() -> Vec<u64> {
         attacks[i] = pos;
     }
 
-    return attacks;
+    attacks
 }
 
 fn gen_knight_attacks() -> Vec<u64> {
@@ -558,7 +557,7 @@ fn gen_knight_attacks() -> Vec<u64> {
         attacks[i] = attack;
     }
 
-    return attacks;
+    attacks
 }
 
 //https://tearth.dev/bitboard-viewer/

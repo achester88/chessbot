@@ -281,17 +281,7 @@ impl Board {
             //white = 11
         }
 
-        if (new_board.castling & 0b0000_1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && old_pt == PieceType::Rook {
-            if to == 0 {
-                new_board.castling &= 0b0111_0111;
-            } else if to == 7 {
-                new_board.castling &= 0b1011_1011;
-            } else if to == 56 {
-                new_board.castling &= 0b1101_1101;
-            } else if to == 63 {
-                new_board.castling &= 0b1110_1110;
-            }
-        }
+        new_board.remove_castling(to, old_pt);
 
         //Remove Opps piece from to pos
         new_board.remove_piece(to, &old_pt, old_pc);
@@ -381,23 +371,27 @@ impl Board {
         self.pieces = [white_pieces, black_pieces];
     }
 
+    fn remove_castling(&mut self, to: usize, pt: PieceType) {
+        if (self.castling & 0b1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && pt == PieceType::Rook {
+            if to == 0 {
+                self.castling &= 0b0111;
+            } else if to == 7 {
+                self.castling &= 0b1011;
+            } else if to == 56 {
+                self.castling &= 0b1101;
+            } else if to == 63 {
+                self.castling &= 0b1110;
+            }
+        }
+    }
+
     pub fn promote(&self, from: usize, to: usize) -> Vec<Move> {
         let mut new_board = self.clone();
 
         let (pc, pt) = new_board.lookup(from);
         let (old_pc, old_pt) = new_board.lookup(to);
 
-        if (new_board.castling & 0b0000_1111) != 0 && ((1 << to) & (0x8100000000000081u64)) != 0 && old_pt == PieceType::Rook {
-            if to == 0 {
-                new_board.castling &= 0b0111_0111;
-            } else if to == 7 {
-                new_board.castling &= 0b1011_1011;
-            } else if to == 56 {
-                new_board.castling &= 0b1101_1101;
-            } else if to == 63 {
-                new_board.castling &= 0b1110_1110;
-            }
-        }
+        new_board.remove_castling(to, old_pt);
 
         new_board.next_turn();
         //Remove old pawn
