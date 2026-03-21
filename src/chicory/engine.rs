@@ -63,7 +63,6 @@ impl Engine {
             if moves & 0xff00000000000000 != 0 || moves & 0xff != 0 {
                 let prmo_moves = board_serialize(moves);
                 for to in prmo_moves {
-                    //let new_board = board.promote(from, to);
                     all_moves.append(&mut (board.promote(from, to))); //64 out of range, no piece
                 }
             } else {
@@ -102,67 +101,24 @@ impl Engine {
 
         //######### Castle Logic #########
         let not_check = board.check_real == 0;
-        let can_castle = (board.castling & 0b0000_1111 != 0) && not_check;
+        let can_castle = (board.castling != 0) && not_check;
 
         if can_castle {
             match board.turn {
                 PieceColor::White => {
-                    if board.castling & 0b0000_1000 == 0b0000_1000 {//board.casling & 0b0100 != 0 && board.casling & 0b0100_0000 != 0 { //queenside
-                        let mut new_board = board.castle(88);
-
-                        let (_, att) = self.gen_rook_moves(&board, 3, board.pieces[board.turn]);
-
-                        if att & 0xc00000000000000 != 0 && new_board.castling & 0b0010 != 0{
-                            new_board.castling &= 0b1101_1111;
-                            //new_board.casling_attacks[1] |= (1 << 3);
-                        }
-                        if self.can_castle_through(0xc, &board) && (board.occupied & 0xe == 0) {
-                            all_moves.push((88, 88, new_board, None));
-                        }
-
+                    if board.castling & 0b1000 == 0b1000 && (board.occupied & 0xe == 0) && self.can_castle_through(0xc, &board) { //queenside
+                        all_moves.push((88, 88,  board.castle(88), None));
                     }
-                    if board.castling & 0b0000_0100 == 0b0000_0100 {
-                        let mut new_board = board.castle(80);
-
-                        let (_, att) = self.gen_rook_moves(&board, 5, board.pieces[board.turn]);
-
-                        if att & 0x6000000000000000 != 0 && new_board.castling & 0b0001 != 0{
-                            new_board.castling &= 0b1110_1111;
-                            //new_board.casling_attacks[0] |= (1 << 5);
-                        }
-                        if self.can_castle_through(0x60, &board) && (board.occupied & 0x60 == 0) {
-                            all_moves.push((80, 80, new_board, None));
-                        }
+                    if board.castling & 0b0100 == 0b0100 && (board.occupied & 0x60 == 0) && self.can_castle_through(0x60, &board) {
+                        all_moves.push((80, 80, board.castle(80), None));
                     }
                 },
                 PieceColor::Black => {
-                    if board.castling & 0b0000_0010 == 0b0000_0010 { //queenside
-                        let mut new_board = board.castle(88);
-
-                        let (_, att) = self.gen_rook_moves(&board, 59, board.pieces[board.turn]);
-
-                        if att & 0xc != 0 && new_board.castling & 0b1000 != 0{//Black Queen Side
-                            new_board.castling &= 0b0111_1111;
-                            //new_board.casling_attacks[3] |= (1 << 59);
-                        }
-                        
-                        if self.can_castle_through(0xc00000000000000, &board) && (board.occupied & 0xe00000000000000 == 0) {
-                            all_moves.push((88, 88, new_board, None));
-                        }
+                    if board.castling & 0b0010 == 0b0010 && (board.occupied & 0xe00000000000000 == 0) && self.can_castle_through(0xc00000000000000, &board) { //queenside
+                        all_moves.push((88, 88, board.castle(88), None));
                     }
-                    if board.castling & 0b0000_0001 == 0b0000_0001 { //kingside
-                        let mut new_board = board.castle(80);
-
-                        let (_, att) = self.gen_rook_moves(&board, 61, board.pieces[board.turn]);
-
-                        if att & 0x60 != 0 && new_board.castling & 0b0100 != 0 {//Black King Side
-                            new_board.castling &= 0b1011_1111;
-                            //new_board.casling_attacks[2] |= (1 << 61);
-                        }
-
-                        if self.can_castle_through(0x6000000000000000, &board) && (board.occupied & 0x6000000000000000 == 0) {
-                            all_moves.push((80, 80, new_board, None));
-                        }
+                    if board.castling & 0b0001 == 0b0001 && (board.occupied & 0x6000000000000000 == 0) && self.can_castle_through(0x6000000000000000, &board) { //kingside
+                        all_moves.push((80, 80, board.castle(80), None));
                     }
                 }
             }
@@ -170,136 +126,16 @@ impl Engine {
 
         let king_pos = board_serialize(board.kings[!board.turn]);
 
-        let all_caslt_spots = board.castling_attacks[0] | board.castling_attacks[1] | board.castling_attacks[2] | board.castling_attacks[3];
-        let all_block_spots = board.castling_blocks[0] | board.castling_blocks[1] | board.castling_blocks[2] | board.castling_blocks[3];
-
         //######### New Board Gen Loop #########
         for i in 0..possable.len() {
             let (from, moves) = possable[i];
             let moves_to = board_serialize(moves);
+
             for ii in 0..moves_to.len() {
                 let to = moves_to[ii];
 
                 if not_check || board.check_real & (1 << to) != 0 { //Not in check or to is in (check)
-                    //can_castle
-
-                    let mut new_board = board.move_piece(to, from);
-                    
-                    let change = (1 << to) | (1 << from);
-
-                    //Resets caslting info is a piece is moved that affects it
-                    if change & all_caslt_spots != 0 {
-                        //new_board.casling_attacks[0] &= !change;
-                        //new_board.casling_attacks[1] &= !change;
-                        //new_board.casling_attacks[2] &= !change;
-                        //new_board.casling_attacks[3] &= !change;
-
-                        if new_board.castling_attacks[0] == 0 && (new_board.castling & 0b0001) != 0 {
-                            new_board.castling |= 0b0001_0000;
-                        }
-                        if new_board.castling_attacks[1] == 0 && (new_board.castling & 0b0010) != 0 {
-                            new_board.castling |= 0b0010_0000;
-                        }
-                        if new_board.castling_attacks[2] == 0 && (new_board.castling & 0b0100) != 0 {
-                            new_board.castling |= 0b0100_0000;
-                        }
-                        if new_board.castling_attacks[3] == 0 && (new_board.castling & 0b1000) != 0 {
-                            new_board.castling |= 0b1000_0000;
-                        }
-                        //Will be reacalcuated if hits again
-                    }
-
-                    if change & all_block_spots != 0 {
-                        //new_board.casling_blocks[0] &= !change;
-                        //new_board.casling_blocks[1] &= !change;
-                        //new_board.casling_blocks[2] &= !change;
-                        //new_board.casling_blocks[3] &= !change;
-
-                        if new_board.castling_blocks[0] == 0 && new_board.castling_attacks[0] != 0 && (new_board.castling & 0b0001) != 0 {
-                            new_board.castling &= 0b1110_1111;
-                        }
-                        if new_board.castling_blocks[1] == 0 && new_board.castling_attacks[1] != 0 && (new_board.castling & 0b0010) != 0 {
-                            new_board.castling &= 0b1101_1111;
-                        }
-                        if new_board.castling_blocks[2] == 0 && new_board.castling_attacks[2] != 0 && (new_board.castling & 0b0100) != 0 {
-                            new_board.castling &= 0b1011_1111;
-                        }
-                        if new_board.castling_blocks[3] == 0 && new_board.castling_attacks[3] != 0 && (new_board.castling & 0b1000) != 0 {
-                            new_board.castling &= 0b01111_1111;
-                        }
-                        //Will be reacalcuated if hits again
-                    }
-
-
-                    if can_castle {
-                        let (_, pt) = board.lookup(from);
-                        let (_, att) = match pt {
-                            PieceType::Pawn => (0, self.pawn_attacks[board.turn as usize][to]),//self.gen_pawn_moves(&board, to, board.turn), //en_pass??
-                            PieceType::Knight => self.gen_knight_moves(&board, to, board.turn),
-                            PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[board.turn]),
-                            PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[board.turn]),
-                            PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[board.turn]),
-                            PieceType::King => self.gen_king_moves(&board, to, board.turn)
-                        };
-
-                        let hit_rank = match board.turn {
-                            PieceColor::White => att & 0x6e00000000000000 != 0 && board.castling & 0b0011 != 0,
-                            PieceColor::Black => att & 0x6e != 0 && board.castling & 0b1100 != 0,
-                        };
-
-                        if hit_rank {
-
-                            //Find Square
-                            if att & 0x6000000000000000 != 0 && new_board.castling & 0b0001 != 0 {//Black King Side
-                                new_board.castling &= 0b1110_1111;
-                                //new_board.casling_attacks[0] |= (1 << to);
-                            }
-                            if att & 0xc00000000000000 != 0 && new_board.castling & 0b0010 != 0 {//Black Queen Side
-                                new_board.castling &= 0b1101_1111;
-                                //new_board.casling_attacks[1] |= (1 << to);
-                            }
-
-                            if att & 0x60 != 0 && new_board.castling & 0b0100 != 0 {//White King Side
-                                new_board.castling &= 0b1011_1111;
-                                //new_board.casling_attacks[2] |= (1 << to);
-                            }
-                            if att & 0xc != 0 && new_board.castling & 0b1000 != 0{//White Queen Side
-                                new_board.castling &= 0b0111_1111;
-                                //new_board.casling_attacks[3] |= (1 << to);
-                            }
-                        }
-                        //new_board.occupied
-                        let queen_att = self.gen_queen_moves(&new_board, to, 0).1;
-
-                        let shifts = [0b0001_0000, 0b0010_0000, 0b0100_0000, 0b1000_0000];
-                        let mut i = 0;
-
-                        while i < 4 {
-
-                            if queen_att & new_board.castling_attacks[i] != 0 {
-                                let hit = queen_att & new_board.castling_attacks[i];
-                                let hit_vec = board_serialize(hit);
-
-                                for pos in &hit_vec {
-                                    let (_, pt) = new_board.lookup(*pos);
-                                    let (_, att) = match pt {
-                                        PieceType::Bishop => self.gen_bishop_moves(&new_board, to, 0),
-                                        PieceType::Rook => self.gen_rook_moves(&new_board, to, 0),
-                                        PieceType::Queen => self.gen_queen_moves(&new_board, to, 0),
-                                        _ => break
-                                    };
-                                    if att & new_board.castling_attacks[i] != 0 {
-                                        //new_board.casling_blocks[i] |= (1 << to);
-                                        new_board.castling |= shifts[i];
-                                    }
-                                }
-                            }
-                            i += 1;
-                        }
-
-                    }
-
-                    all_moves.push((from, to, new_board, None));
+                    all_moves.push((from, to, board.move_piece(to, from), None));
                 }
 
             }
@@ -311,21 +147,6 @@ impl Engine {
         while i < all_moves.len() {
 
             let new_board = &mut all_moves[i].2;
-
-            if new_board.castling != 0 {
-                if new_board.occupied & 0xe00000000000000 != 0 {
-                    new_board.castling &= 0b1101_1111;
-                }
-                if new_board.occupied & 0x6000000000000000 != 0 {
-                    new_board.castling &= 0b1110_1111;
-                }
-                if new_board.occupied & 0xe != 0 {
-                    new_board.castling &= 0b0111_1111;
-                }
-                if new_board.occupied & 0x60 != 0 {
-                    new_board.castling &= 0b1011_1111;
-                }
-            }
 
             //enemy check
                 if king_pos.len() > 0 {
@@ -379,10 +200,6 @@ impl Engine {
                         PieceType::King => self.gen_king_moves(&board, to, opp_color)
                     };
                     if (att & (1 << i)) != 0 {
-                        //let (cr, cf) = self.gen_check_info(&board, to, pos);
-                        //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
-                        //check_real |= cr;
-                        //check_full |= cf;
                         return false;
                     }
                 }
@@ -590,106 +407,7 @@ impl Engine {
         }
         return attack;
     }
-    //move fuction that return a new board after that move
 
-    pub fn gen_init_casling_info(&self, board: &Board, opp: PieceColor) -> (u8, [u64; 4], [u64; 4]) {
-
-        //TODO ACCOUNT FOR BLOCK ATTACKS
-
-        let posable = board.pieces[opp];
-        let posable_pos = board_serialize(posable);
-
-        let mut casling = 0b1111_0000 | board.castling;
-        let casling_blockers = [0;4];
-        let casling_attacks = [0; 4];
-
-        for pos in posable_pos {
-            let (pc, pt) = board.lookup(pos);
-            let (_, att) = match pt {
-                PieceType::Pawn => (0, self.pawn_attacks[opp as usize][pos]),
-                PieceType::Knight => self.gen_knight_moves(&board, pos, opp),
-                PieceType::Bishop => self.gen_bishop_moves(&board, pos, board.pieces[opp]),
-                PieceType::Rook => self.gen_rook_moves(&board, pos, board.pieces[opp]),
-                PieceType::Queen => self.gen_queen_moves(&board, pos, board.pieces[opp]),
-                PieceType::King => self.gen_king_moves(&board, pos, opp)
-            };
-
-                match pc {
-                    PieceColor::White => {
-                        let hit_rank = att & 0x6c00000000000000 != 0 && board.castling & 0b0011 != 0;
-                        if hit_rank {
-                            if att & 0x6000000000000000 != 0 && casling & 0b0001 != 0 { //Black King Side
-                                casling &= 0b1110_1111;
-                                //casling_attacks[0] |= (1 << pos);
-                            }
-                            if att & 0xc00000000000000 != 0 && casling & 0b0010 != 0 { //Black Queen Side
-                                casling &= 0b1101_1111;
-                                //casling_attacks[1] |= (1 << pos);
-                            }
-                        }
-                    },
-                    PieceColor::Black => {
-                        let hit_rank = att & 0x6c != 0 && board.castling & 0b1100 != 0;
-                        if hit_rank {
-                            if att & 0x60 != 0 && casling & 0b0100 != 0 { //White King Side
-                                casling &= 0b1011_1111;
-                                //casling_attacks[2] |= (1 << pos);
-                            }
-                            if att & 0xc != 0 && casling & 0b1000 != 0 { //White Queen Side
-                                casling &= 0b0111_1111;
-                                //casling_attacks[3] |= (1 << pos);
-                            }
-                        }
-                    }
-                }
-
-        }
-
-        //TODO COVER ALL CASES
-
-        for pos in board_serialize(board.bishops[PieceColor::Black]) {
-            let cast = self.gen_ray_attacks(0, Dir::SOWE, pos) |
-                self.gen_ray_attacks(0, Dir::SOEA, pos);
-            if cast & 0x6c != 0 {
-                let blockers_pos_board = cast & board.occupied;
-                if blockers_pos_board == 0 {
-                    if cast & 0x60 != 0 {
-                        casling &= 0b1011_1111;
-                        //casling_attacks[2] |= (1 << pos);
-                    } else if cast & 0xc != 0 {
-                        casling &= 0b0111_1111;
-                        //casling_attacks[3] |= (1 << pos);
-                    }
-                } else {
-                    //let blockers_pos = board_serialize(blockers_pos_board);
-                    if cast & 0x60 != 0 {
-
-                        //casling_blockers[2] |= blockers_pos_board;
-                        //casling_attacks[2] |= (1 << pos);
-                    } else if cast & 0xc != 0 {
-                        //casling_blockers[3] |= blockers_pos_board;
-                        //casling_attacks[3] |= (1 << pos);
-                    }
-                }
-
-            }
-        }
-
-        if board.occupied & 0xe00000000000000 != 0 {
-            casling &= 0b1101_1111;
-        }
-        if board.occupied & 0x6000000000000000 != 0 {
-            casling &= 0b1110_1111;
-        }
-        if board.occupied & 0xe != 0 {
-            casling &= 0b0111_1111;
-        }
-        if board.occupied & 0x60 != 0 {
-            casling &= 0b1011_1111;
-        }
-
-        (casling, casling_attacks, casling_blockers)
-    }
 }
 
 //https://www.chessprogramming.org/On_an_empty_Board#Rays_by_Line

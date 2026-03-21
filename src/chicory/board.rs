@@ -63,8 +63,6 @@ pub struct Board {
 
     pub turn: PieceColor,
     pub castling: u8,    //white, black | queenside, kingside QKqk
-    pub castling_attacks: [u64; 4],
-    pub castling_blocks: [u64; 4],
     pub en_passant: u8, //position of available en passant
     pub check_real: u64, //TODO USE BOOL AND CAL AS NEEDED
     pub check_full: u64,
@@ -178,8 +176,6 @@ impl Board {
                 PieceColor::Black
             },
             castling: 0b1111_0000 | castling,
-            castling_attacks: [0; 4],
-            castling_blocks: [0; 4],
             check_real: 0,
             check_full: 0,
             en_passant: ep,
@@ -188,20 +184,6 @@ impl Board {
             occupied: wp | wb | wn | wr | wq | wk | bp | bb | bn | br | bq | bk,
             pieces: [wp | wb | wn | wr | wq | wk, bp | bb | bn | br | bq | bk],
         };
-
-        let (casl, casl_att, _) = engine.gen_init_casling_info(&new_board, PieceColor::White);
-
-        new_board.castling &= casl;
-        new_board.castling_attacks[0] = casl_att[0];
-        new_board.castling_attacks[1] = casl_att[1];
-
-        let (casl, casl_att, blockers) = engine.gen_init_casling_info(&new_board, PieceColor::Black);
-
-        new_board.castling &= casl;
-        new_board.castling_attacks[2] = casl_att[2];
-        new_board.castling_attacks[3] = casl_att[3];
-
-        new_board.castling_blocks = blockers;
 
         let king_board = new_board.kings[new_board.turn];
         if king_board != 0 {
@@ -267,13 +249,9 @@ impl Board {
                 match pc {
                     PieceColor::White => {
                         values = 0b0011_0011;
-                        new_board.castling_attacks[2] = 0;
-                        new_board.castling_attacks[3] = 0;
                     },
                     PieceColor::Black => {
                         values = 0b1100_1100;
-                        new_board.castling_attacks[0] = 0;
-                        new_board.castling_attacks[1] = 0;
 
                     }
                 };
@@ -285,19 +263,15 @@ impl Board {
                 match from {
                     0 => {
                         new_board.castling &= 0b0111_0111;
-                        new_board.castling_attacks[3] = 0;
                     }, //white queenside
                     7 => {
                         new_board.castling &= 0b1011_1011;
-                        new_board.castling_attacks[2] = 0;
                     }, //white kingside
                     56 => {
                         new_board.castling &= 0b1101_1101;
-                        new_board.castling_attacks[1] = 0;
                     }, //black queenside
                     63 => {
                         new_board.castling &= 0b1110_1110;
-                        new_board.castling_attacks[0] = 0;
                     }, //black kingside
                     _ => {}
                 };
