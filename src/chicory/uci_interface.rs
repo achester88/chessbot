@@ -1,7 +1,5 @@
-use std::process::Command;
 use crate::chicory::board::Board;
 use crate::chicory::engine::Engine;
-use crate::chicory::uci_interface::Cmd::Set;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Cmd {
@@ -12,7 +10,7 @@ pub enum Cmd {
 
 pub struct UciInterface {
     pub current_board: Option<Board>,
-    current_move: usize,
+    //current_move: usize,
     pub search_depth: usize,
 }
 impl UciInterface {
@@ -20,7 +18,7 @@ impl UciInterface {
     pub fn new() -> Self {
         UciInterface {
             current_board: None,
-            current_move: 0,
+            //current_move: 0,
             search_depth: 4,
         }
     }
@@ -150,7 +148,7 @@ impl UciInterface {
         Some(Cmd::GoInf)
     }
     pub fn uci_new_game(&mut self) -> Option<Cmd> {
-        let eng = Engine::new(); //replace with ref or something :(
+        //let eng = Engine::new(); //replace with ref or something :(
 
         self.current_board = None;//Some(Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &eng));
 

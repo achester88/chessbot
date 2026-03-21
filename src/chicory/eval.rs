@@ -65,7 +65,7 @@ pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: f32, mut beta
             }
         }
     
-    return (best, Some(best_move), node_count);
+    (best, Some(best_move), node_count)
 }
 
 pub fn eval(board: &Board, real: bool) -> f32 {
@@ -86,5 +86,5 @@ pub fn eval(board: &Board, real: bool) -> f32 {
     }
 
 
-    return score;
+    score
 }

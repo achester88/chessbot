@@ -1,12 +1,10 @@
-use chicory::chicory::bitboard::{board_serialize, print_bitboard, print_bitboard_pos};
-use chicory::chicory::board::{Board, PieceColor};
+use chicory::chicory::board::Board;
 use chicory::chicory::engine::{Engine, Move};
 
 mod common;
 use common::{fen_arr};
 use crate::common::assert_fen_arr;
 
-//FEN string should be -1 fore moves i.e.
 #[test]
 fn pawn_base() { 
     let eng = Engine::new();
@@ -192,7 +190,7 @@ fn king_check() {
 #[test]
 fn king_to_check() {
     let eng = Engine::new();
-    let mut board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1", &eng);
+    let board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1", &eng);
 
     let mut moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
@@ -221,7 +219,7 @@ fn king_to_check() {
 #[test]
 fn king_to_check_next() {
     let eng = Engine::new();
-    let mut board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1", &eng);
+    let board = Board::new("5k2/8/4P3/8/8/8/8/3K4 w - - 0 1", &eng);
 
     let mut moves = eng.gen_moves(board);
     println!("Moves: {:?}", moves);
@@ -247,8 +245,6 @@ fn king_to_check_next() {
     assert_fen_arr(&mut moves, &mut fen_moves);
 
     let (_, _, next_board, _) = moves[0];
-    println!("###########################");
-    next_board.print_board();
 
     let mut next_moves = eng.gen_moves(next_board);
 
@@ -267,16 +263,15 @@ fn king_to_check_next() {
 fn king_castling() {
     let eng = Engine::new();
     let board = Board::new("4k3/8/8/8/8/8/8/4K2R w K - 0 1", &eng);
-    println!("{:b}", board.casling);
     let mut moves = eng.gen_moves(board);
 
     let mut fen_moves: Vec<Move>;
 
     println!("Moves: {:?}", moves);
 
-    fen_moves = (fen_arr(80, vec!(
+    fen_moves = fen_arr(80, vec!(
         (80, "4k3/8/8/8/8/8/8/5RK1 b - - 1 1")
-    )));
+    ));
 
     fen_moves.append(&mut fen_arr(7, vec!(
         (5, "4k3/8/8/8/8/8/8/4KR2 b - - 1 1"),
