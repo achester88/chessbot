@@ -66,7 +66,7 @@ fn main() {
                         while !stop_calculation_clone.load(Ordering::Relaxed) && !self_stop {
 
                             //cur_best_move = Some(new_move[0]);
-                            let (_, best_move, _) = minmax(&engine, cal_board.unwrap(), interface.search_depth, -f32::INFINITY, f32::INFINITY, cal_board.unwrap().turn, 1, true);
+                            let (_, best_move, _) = minmax(&engine, cal_board.unwrap(), interface.search_depth, i32::MIN, i32::MAX, cal_board.unwrap().turn, 1, true);
                             println!("info score cp {}", eval(&best_move.unwrap().2, true));
                             cur_best_move = best_move;
                             self_stop = true;

@@ -3,23 +3,100 @@ use crate::chicory::board::{Board, PieceColor};
 use crate::chicory::engine::{Engine, Move};
 use crate::chicory::bitboard::board_serialize;
 
-pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: f32, mut beta: f32, turn: PieceColor, par_moves: usize, top: bool) -> (f32, Option<Move>, usize) {
+const BLACK_PAWN_PS_TABLE: [i32; 64] = [
+    0,  0,  0,  0,  0,  0,  0,  0,
+    50, 50, 50, 50, 50, 50, 50, 50,
+    10, 10, 20, 30, 30, 20, 10, 10,
+    5,  5, 10, 25, 25, 10,  5,  5,
+    0,  0,  0, 20, 20,  0,  0,  0,
+    5, -5,-10,  0,  0,-10, -5,  5,
+    5, 10, 10,-20,-20, 10, 10,  5,
+    0,  0,  0,  0,  0,  0,  0,  0
+];
+
+const BLACK_KNIGHT_PS_TABLE: [i32; 64] = [
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50
+];
+
+const BLACK_BISHOP_PS_TABLE: [i32; 64] = [
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20,
+];
+
+const BLACK_ROOK_PS_TABLE: [i32; 64] = [
+    0,  0,  0,  0,  0,  0,  0,  0,
+    5, 10, 10, 10, 10, 10, 10,  5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    0,  0,  0,  5,  5,  0,  0,  0
+];
+
+const BLACK_QUEEN_PS_TABLE: [i32; 64] = [
+    -20,-10,-10, -5, -5,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5,  5,  5,  5,  0,-10,
+    -5,  0,  5,  5,  5,  5,  0, -5,
+    0,  0,  5,  5,  5,  5,  0, -5,
+    -10,  5,  5,  5,  5,  5,  0,-10,
+    -10,  0,  5,  0,  0,  0,  0,-10,
+    -20,-10,-10, -5, -5,-10,-10,-20
+];
+
+const BLACK_KING_MID_PS_TABLE: [i32; 64] = [
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+    20, 20,  0,  0,  0,  0, 20, 20,
+    20, 30, 10,  0,  0, 10, 30, 20
+];
+
+
+
+const WHITE_PAWN_PS_TABLE: [i32; 64] = reverse_array(BLACK_PAWN_PS_TABLE);
+const WHITE_KNIGHT_PS_TABLE: [i32; 64] = reverse_array(BLACK_KNIGHT_PS_TABLE);
+const WHITE_BISHOP_PS_TABLE: [i32; 64] = reverse_array(BLACK_BISHOP_PS_TABLE);
+const WHITE_ROOK_PS_TABLE: [i32; 64] = reverse_array(BLACK_ROOK_PS_TABLE);
+const WHITE_QUEEN_PS_TABLE: [i32; 64] = reverse_array(BLACK_QUEEN_PS_TABLE);
+const WHITE_KING_MID_PS_TABLE: [i32; 64] = reverse_array(BLACK_KING_MID_PS_TABLE);
+
+
+
+pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: i32, mut beta: i32, turn: PieceColor, par_moves: usize, top: bool) -> (i32, Option<Move>, usize) {
     //println!("info string {}", depth);
     if depth == 0 {
         return (eval(&board, false), None, 1)
     }
 
     let mut best = match turn {
-        PieceColor::White => -f32::INFINITY,
-        PieceColor::Black =>  f32::INFINITY
+        PieceColor::White => i32::MIN,
+        PieceColor::Black =>  i32::MAX
     };
 
     let moves = eng.gen_moves(board);
 
     if moves.len() == 0 {
         return match !board.turn {
-            PieceColor::White => (999999999.0, None, 1),
-            PieceColor::Black => (-999999999.0, None, 1)
+            PieceColor::White => (i32::MAX, None, 1),
+            PieceColor::Black => (i32::MIN, None, 1)
         };
         //return (eval(&board, false), None)
     }
@@ -68,18 +145,24 @@ pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: f32, mut beta
     (best, Some(best_move), node_count)
 }
 
-pub fn eval(board: &Board, real: bool) -> f32 {
-    let mut score = 0.0;
+pub fn eval(board: &Board, real: bool) -> i32 {
+    let mut score = 0;
 
-    score += ((board_serialize(board.pawns[PieceColor::White]).len() as f32) - (board_serialize(board.pawns[PieceColor::Black]).len() as f32)) * 100.0;
-    score += ((board_serialize(board.knights[PieceColor::White]).len() as f32) - (board_serialize(board.knights[PieceColor::Black]).len() as f32)) * 300.0;
-    score += ((board_serialize(board.bishops[PieceColor::White]).len() as f32) - (board_serialize(board.bishops[PieceColor::Black]).len() as f32)) * 300.0;
-    score += ((board_serialize(board.rooks[PieceColor::White]).len() as f32) - (board_serialize(board.rooks[PieceColor::Black]).len() as f32)) * 500.0;
-    score += ((board_serialize(board.queens[PieceColor::White]).len() as f32) - (board_serialize(board.queens[PieceColor::Black]).len() as f32)) * 900.0;
+    score += ((board_serialize(board.pawns[PieceColor::White]).len() as i32) - (board_serialize(board.pawns[PieceColor::Black]).len() as i32)) * 100;
+    score += ((board_serialize(board.knights[PieceColor::White]).len() as i32) - (board_serialize(board.knights[PieceColor::Black]).len() as i32)) * 320;
+    score += ((board_serialize(board.bishops[PieceColor::White]).len() as i32) - (board_serialize(board.bishops[PieceColor::Black]).len() as i32)) * 330;
+    score += ((board_serialize(board.rooks[PieceColor::White]).len() as i32) - (board_serialize(board.rooks[PieceColor::Black]).len() as i32)) * 500;
+    score += ((board_serialize(board.queens[PieceColor::White]).len() as i32) - (board_serialize(board.queens[PieceColor::Black]).len() as i32)) * 900;
 
-    /*
-    score += ((board_serialize(board.kings[PieceColor::White]).len() as f32) - (board_serialize(board.kings[PieceColor::Black]).len() as f32)) * 999999999.0;
-    */
+
+    score += ((board_serialize(board.kings[PieceColor::White]).len() as i32) - (board_serialize(board.kings[PieceColor::Black]).len() as i32)) * 20000;
+
+    score += bit_cal(board.pawns[PieceColor::White], WHITE_PAWN_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_PAWN_PS_TABLE);
+    score += bit_cal(board.pawns[PieceColor::White], WHITE_KNIGHT_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_KNIGHT_PS_TABLE);
+    score += bit_cal(board.pawns[PieceColor::White], WHITE_BISHOP_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_BISHOP_PS_TABLE);
+    score += bit_cal(board.pawns[PieceColor::White], WHITE_ROOK_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_ROOK_PS_TABLE);
+    score += bit_cal(board.pawns[PieceColor::White], WHITE_QUEEN_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_QUEEN_PS_TABLE);
+    score += bit_cal(board.pawns[PieceColor::White], WHITE_KING_MID_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_KING_MID_PS_TABLE);
 
     if real {
         println!("info string ||||||||||||||||||||||| eval {}", score);
@@ -87,4 +170,26 @@ pub fn eval(board: &Board, real: bool) -> f32 {
 
 
     score
+}
+
+fn bit_cal(mut bitboard: u64, table: [i32; 64]) -> i32 {
+    let mut score = 0;
+    while bitboard != 0 {
+        let i = bitboard.trailing_zeros() as usize;
+        score += table[i];
+        bitboard ^= 1 << i;
+    }
+
+    score
+}
+
+const fn reverse_array<T: Copy, const N: usize>(array: [T; N]) -> [T; N] {
+    let mut out = array;
+    let mut i = 0;
+    while i < N {
+        out[i] = array[N - 1 - i];
+        i += 1;
+    }
+
+    out
 }
