@@ -45,6 +45,15 @@ fn main() {
 
         };
 
+        if finished_calculation.load(Ordering::Relaxed) {
+            let best_move_lock = best_move.lock().unwrap();
+            let (_, _, board, _) = *best_move_lock;
+            println!("bestmove {}", Board::move_to_lan(&*best_move_lock));
+            interface.current_board = Some(board);
+            finished_calculation.store(false, Ordering::Relaxed);
+            stop_calculation.store(false, Ordering::Relaxed);
+        }
+
         if cmd_out.is_some() {
 
             match cmd_out.unwrap() {
@@ -66,7 +75,7 @@ fn main() {
                         while !stop_calculation_clone.load(Ordering::Relaxed) && !self_stop {
 
                             //cur_best_move = Some(new_move[0]);
-                            let (_, best_move, _) = minmax(&engine, cal_board.unwrap(), interface.search_depth, i32::MIN, i32::MAX, cal_board.unwrap().turn, 1, true);
+                            let (_, best_move, _) = minmax(&engine, cal_board.unwrap(), interface.search_depth, i32::MIN, i32::MAX, cal_board.unwrap().turn, 1, &stop_calculation_clone, true);
                             println!("info score cp {}", eval(&best_move.unwrap().2, true));
                             cur_best_move = best_move;
                             self_stop = true;
@@ -80,20 +89,19 @@ fn main() {
                     });
                     //let start = Instant::now();
 
-                    while !finished_calculation.load(Ordering::Relaxed) {
-                    }
+                    //while !finished_calculation.load(Ordering::Relaxed) {
+                    //}
 
-                    let best_move_lock = best_move.lock().unwrap();
-                    let (_, _, board, _) = *best_move_lock;
-                    println!("bestmove {}", Board::move_to_lan(&*best_move_lock));
-                    interface.current_board = Some(board);
-                    finished_calculation.store(false, Ordering::Relaxed);
-                    stop_calculation.store(false, Ordering::Relaxed);
 
                 },
                 Cmd::Set(board) => {
                     println!("info score cp {}", eval(&board, true));
-                }
+                },
+
+                Cmd::Stop => {
+                    let stop_calculation_clone = Arc::clone(&stop_calculation);
+                    stop_calculation.store(true, Ordering::Relaxed);
+                },
                 _ => {}
             }
 

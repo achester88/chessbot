@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 use crate::chicory::board::{Board, PieceColor};
 use crate::chicory::engine::{Engine, Move};
@@ -91,7 +93,7 @@ const WHITE_KING_END_PS_TABLE: [i32; 64] = reverse_array(BLACK_KING_END_PS_TABLE
 
 
 
-pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: i32, mut beta: i32, turn: PieceColor, par_moves: usize, top: bool) -> (i32, Option<Move>, usize) {
+pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: i32, mut beta: i32, turn: PieceColor, par_moves: usize, stop_calculation: &AtomicBool, top: bool) -> (i32, Option<Move>, usize) {
     //println!("info string {}", depth);
     if depth == 0 {
         return (eval(&board, false), None, 1)
@@ -119,8 +121,12 @@ pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: i32, mut beta
     let mut node_count = 0;
 
         for m in moves {
+            if stop_calculation.load(Ordering::Relaxed) {
+                break;
+            }
+
             let test_start = Instant::now();
-            let (score, _, nodes) = minmax(&eng, m.2, depth-1, alpha, beta, !turn, total_nodes, false);
+            let (score, _, nodes) = minmax(&eng, m.2, depth-1, alpha, beta, !turn, total_nodes, stop_calculation, false);
             node_count += nodes;
             if top {
                 println!("info depth {} nodes {} score cp {} time {} pv {}", depth, node_count, score, test_start.elapsed().as_millis(), Board::move_to_lan(&m));
