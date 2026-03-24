@@ -69,6 +69,16 @@ const BLACK_KING_MID_PS_TABLE: [i32; 64] = [
     20, 30, 10,  0,  0, 10, 30, 20
 ];
 
+const BLACK_KING_END_PS_TABLE: [i32; 64] = [
+    -50,-40,-30,-20,-20,-30,-40,-50,
+    -30,-20,-10,  0,  0,-10,-20,-30,
+    -30,-10, 20, 30, 30, 20,-10,-30,
+    -30,-10, 30, 40, 40, 30,-10,-30,
+    -30,-10, 30, 40, 40, 30,-10,-30,
+    -30,-10, 20, 30, 30, 20,-10,-30,
+    -30,-30,  0,  0,  0,  0,-30,-30,
+    -50,-30,-30,-30,-30,-30,-30,-50
+];
 
 
 const WHITE_PAWN_PS_TABLE: [i32; 64] = reverse_array(BLACK_PAWN_PS_TABLE);
@@ -77,6 +87,7 @@ const WHITE_BISHOP_PS_TABLE: [i32; 64] = reverse_array(BLACK_BISHOP_PS_TABLE);
 const WHITE_ROOK_PS_TABLE: [i32; 64] = reverse_array(BLACK_ROOK_PS_TABLE);
 const WHITE_QUEEN_PS_TABLE: [i32; 64] = reverse_array(BLACK_QUEEN_PS_TABLE);
 const WHITE_KING_MID_PS_TABLE: [i32; 64] = reverse_array(BLACK_KING_MID_PS_TABLE);
+const WHITE_KING_END_PS_TABLE: [i32; 64] = reverse_array(BLACK_KING_END_PS_TABLE);
 
 
 
@@ -148,12 +159,19 @@ pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: i32, mut beta
 pub fn eval(board: &Board, real: bool) -> i32 {
     let mut score = 0;
 
-    score += ((board_serialize(board.pawns[PieceColor::White]).len() as i32) - (board_serialize(board.pawns[PieceColor::Black]).len() as i32)) * 100;
-    score += ((board_serialize(board.knights[PieceColor::White]).len() as i32) - (board_serialize(board.knights[PieceColor::Black]).len() as i32)) * 320;
-    score += ((board_serialize(board.bishops[PieceColor::White]).len() as i32) - (board_serialize(board.bishops[PieceColor::Black]).len() as i32)) * 330;
-    score += ((board_serialize(board.rooks[PieceColor::White]).len() as i32) - (board_serialize(board.rooks[PieceColor::Black]).len() as i32)) * 500;
-    score += ((board_serialize(board.queens[PieceColor::White]).len() as i32) - (board_serialize(board.queens[PieceColor::Black]).len() as i32)) * 900;
+    let white_mat_score = ((board_serialize(board.pawns[PieceColor::White]).len() as i32) * 100) +
+        ((board_serialize(board.knights[PieceColor::White]).len() as i32) * 320) +
+        ((board_serialize(board.bishops[PieceColor::White]).len() as i32) * 330) +
+        ((board_serialize(board.rooks[PieceColor::White]).len() as i32) * 500) +
+        ((board_serialize(board.queens[PieceColor::White]).len() as i32) * 900);
 
+    let black_mat_score = ((board_serialize(board.pawns[PieceColor::Black]).len() as i32) * 100) +
+        ((board_serialize(board.knights[PieceColor::Black]).len() as i32) * 320) +
+        ((board_serialize(board.bishops[PieceColor::Black]).len() as i32) * 330) +
+        ((board_serialize(board.rooks[PieceColor::Black]).len() as i32) * 500) +
+        ((board_serialize(board.queens[PieceColor::Black]).len() as i32) * 900);
+
+    score += white_mat_score - black_mat_score;
 
     score += ((board_serialize(board.kings[PieceColor::White]).len() as i32) - (board_serialize(board.kings[PieceColor::Black]).len() as i32)) * 20000;
 
@@ -162,7 +180,20 @@ pub fn eval(board: &Board, real: bool) -> i32 {
     score += bit_cal(board.bishops[PieceColor::White], WHITE_BISHOP_PS_TABLE) - bit_cal(board.bishops[PieceColor::Black], BLACK_BISHOP_PS_TABLE);
     score += bit_cal(board.rooks[PieceColor::White], WHITE_ROOK_PS_TABLE) - bit_cal(board.rooks[PieceColor::Black], BLACK_ROOK_PS_TABLE);
     score += bit_cal(board.queens[PieceColor::White], WHITE_QUEEN_PS_TABLE) - bit_cal(board.queens[PieceColor::Black], BLACK_QUEEN_PS_TABLE);
-    score += bit_cal(board.kings[PieceColor::White], WHITE_KING_MID_PS_TABLE) - bit_cal(board.kings[PieceColor::Black], BLACK_KING_MID_PS_TABLE);
+
+    if white_mat_score <= 1000 {
+        score += bit_cal(board.kings[PieceColor::White], WHITE_KING_END_PS_TABLE);
+    } else {
+        let endgame_level = (white_mat_score-4000) / 3000; //(pms - game max) / (game max - 1000)
+        score += ( (bit_cal(board.kings[PieceColor::White], WHITE_KING_MID_PS_TABLE) * (1-endgame_level)) + (bit_cal(board.kings[PieceColor::White], WHITE_KING_END_PS_TABLE) * endgame_level) ) / 2
+    }
+
+    if black_mat_score <= 1000 {
+        score += bit_cal(board.kings[PieceColor::Black], BLACK_KING_END_PS_TABLE);
+    } else {
+        let endgame_level = (white_mat_score-4000) / 3000; //(pms - game max) / (game max - 1000)
+        score += ( (bit_cal(board.kings[PieceColor::Black], BLACK_KING_MID_PS_TABLE) * (1-endgame_level)) + (bit_cal(board.kings[PieceColor::Black], BLACK_KING_END_PS_TABLE) * endgame_level) ) / 2
+    }
 
     if real {
         println!("info string ||||||||||||||||||||||| eval {}", score);
