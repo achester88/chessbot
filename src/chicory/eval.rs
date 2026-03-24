@@ -158,11 +158,11 @@ pub fn eval(board: &Board, real: bool) -> i32 {
     score += ((board_serialize(board.kings[PieceColor::White]).len() as i32) - (board_serialize(board.kings[PieceColor::Black]).len() as i32)) * 20000;
 
     score += bit_cal(board.pawns[PieceColor::White], WHITE_PAWN_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_PAWN_PS_TABLE);
-    score += bit_cal(board.pawns[PieceColor::White], WHITE_KNIGHT_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_KNIGHT_PS_TABLE);
-    score += bit_cal(board.pawns[PieceColor::White], WHITE_BISHOP_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_BISHOP_PS_TABLE);
-    score += bit_cal(board.pawns[PieceColor::White], WHITE_ROOK_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_ROOK_PS_TABLE);
-    score += bit_cal(board.pawns[PieceColor::White], WHITE_QUEEN_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_QUEEN_PS_TABLE);
-    score += bit_cal(board.pawns[PieceColor::White], WHITE_KING_MID_PS_TABLE) - bit_cal(board.pawns[PieceColor::Black], BLACK_KING_MID_PS_TABLE);
+    score += bit_cal(board.knights[PieceColor::White], WHITE_KNIGHT_PS_TABLE) - bit_cal(board.knights[PieceColor::Black], BLACK_KNIGHT_PS_TABLE);
+    score += bit_cal(board.bishops[PieceColor::White], WHITE_BISHOP_PS_TABLE) - bit_cal(board.bishops[PieceColor::Black], BLACK_BISHOP_PS_TABLE);
+    score += bit_cal(board.rooks[PieceColor::White], WHITE_ROOK_PS_TABLE) - bit_cal(board.rooks[PieceColor::Black], BLACK_ROOK_PS_TABLE);
+    score += bit_cal(board.queens[PieceColor::White], WHITE_QUEEN_PS_TABLE) - bit_cal(board.queens[PieceColor::Black], BLACK_QUEEN_PS_TABLE);
+    score += bit_cal(board.kings[PieceColor::White], WHITE_KING_MID_PS_TABLE) - bit_cal(board.kings[PieceColor::Black], BLACK_KING_MID_PS_TABLE);
 
     if real {
         println!("info string ||||||||||||||||||||||| eval {}", score);
