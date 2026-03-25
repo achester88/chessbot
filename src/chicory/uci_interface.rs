@@ -21,7 +21,7 @@ impl UciInterface {
     pub fn new(engine: Arc<Engine>) -> Self {
         UciInterface {
             current_board: Arc::new(Mutex::new(None)),
-            search_depth: 4,
+            search_depth: 5,
             engine: engine,
         }
     }
