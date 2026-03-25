@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 use crate::chicory::board::{Board, PieceColor};
@@ -125,11 +124,11 @@ pub fn minmax(eng: &Engine, board: Board, depth: usize, mut alpha: i32, mut beta
                 break;
             }
 
-            let test_start = Instant::now();
+            //let test_start = Instant::now();
             let (score, _, nodes) = minmax(&eng, m.2, depth-1, alpha, beta, !turn, total_nodes, stop_calculation, false);
             node_count += nodes;
             if top {
-                println!("info depth {} nodes {} score cp {} time {} pv {}", depth, node_count, score, test_start.elapsed().as_millis(), Board::move_to_lan(&m));
+                //println!("info depth {} nodes {} score cp {} time {} pv {}", depth, node_count, score, test_start.elapsed().as_millis(), Board::move_to_lan(&m));
             }
 
             match turn {

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use std::sync::Mutex;
 use crate::chicory::board::Board;
 use crate::chicory::engine::Engine;
 
@@ -9,17 +11,18 @@ pub enum Cmd {
 }
 
 pub struct UciInterface {
-    pub current_board: Option<Board>,
+    pub current_board: Arc<Mutex<Option<Board>>>,
     //current_move: usize,
     pub search_depth: usize,
+    engine: Arc<Engine>,
 }
 impl UciInterface {
 
-    pub fn new() -> Self {
+    pub fn new(engine: Arc<Engine>) -> Self {
         UciInterface {
-            current_board: None,
-            //current_move: 0,
+            current_board: Arc::new(Mutex::new(None)),
             search_depth: 4,
+            engine: engine
         }
     }
 
@@ -44,16 +47,18 @@ impl UciInterface {
     pub fn position(&mut self, command: Vec<&str>) -> Option<Cmd> {
         let mut i = 1;
 
-        let new_game = self.current_board.is_none();
+        let mut cur_board = self.current_board.lock().unwrap().clone();
+
+        let new_game = cur_board.is_none();
 
         println!("info string New Game: {}", new_game);
 
+
+        println!("info string =========================== {:?}", self.current_board);
         if new_game {
             if command[i] == "startpos" {
 
-                let eng = Engine::new(); //replace with ref or something :(
-
-                self.current_board = Some(Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &eng));
+                cur_board = Some(Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &self.engine));
 
                 i += 1;
             } else {
@@ -72,7 +77,7 @@ impl UciInterface {
 
                 let eng = Engine::new(); //replace with ref or something :(
 
-                self.current_board = Some(Board::new(&fen_tokens.join(" "), &eng));
+                cur_board = Some(Board::new(&fen_tokens.join(" "), &eng));
             }
 
 
@@ -90,6 +95,10 @@ impl UciInterface {
             if command[i] == "startpos" {
                 i += 1;
 
+                //let eng = Engine::new(); //replace with ref or something :(
+
+                //cur_board = Some(Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &self.engine));
+
                 //println!("info string {} < {} | {}", i, command.len(), command[i]);
                 //grab last move made
                 if i < command.len() && command[i] == "moves" {
@@ -98,12 +107,15 @@ impl UciInterface {
                     while i < command.len() {
                        //println!("info string b: {:?} {}", self.current_board?.turn, command[i]);
                         all_moves.push(&command[i]);
+                        //self.read_move(&command[i]);
                         //println!("info string a: {:?} {}", self.current_board?.turn, command[i]);
                         i += 1;
                         //println!("info string i: {} {:?}", i, all_moves);
                     }
                     //println!("info string {:?}", all_moves[all_moves.len()-1]);
                     self.read_move(&all_moves[all_moves.len()-1]);
+
+                    cur_board = Some(cur_board.unwrap().make_move(&all_moves[all_moves.len()-1]));
                 }
             }
         }
@@ -114,22 +126,27 @@ impl UciInterface {
 
         //println!("info string {:?}", self.current_board?.turn);
 
-        Some(Cmd::Set(self.current_board.unwrap()))
+        *self.current_board.lock().unwrap() = cur_board;
+
+
+        println!("info string AFTER =========================== {:?}", self.current_board);
+
+        Some(Cmd::Set(cur_board.unwrap()))
     }
 
     fn read_move(&mut self, str: &str) {
         //println!("info string read_move");
+        let old_board = *self.current_board.lock().unwrap();
+
         if str == "O-O" {
-            let board = self.current_board.unwrap().castle(80);
-            self.current_board = Some(board);
+            *self.current_board.lock().unwrap() = Some(old_board.unwrap().castle(80));
         } else if str == "O-O-O" {
-            let board = self.current_board.unwrap().castle(88);
-            self.current_board = Some(board);
+            *self.current_board.lock().unwrap() = Some(old_board.unwrap().castle(88));
         } else {
             let from = Board::lan_to_pos(&str[0..2]);
             let to = Board::lan_to_pos(&str[2..4]);
             //println!("info string here");
-            self.current_board = Some(self.current_board.unwrap().move_piece(to, from));
+            *self.current_board.lock().unwrap() = Some(old_board.unwrap().move_piece(to, from));
         }
     }
     /*
@@ -150,7 +167,8 @@ impl UciInterface {
     pub fn uci_new_game(&mut self) -> Option<Cmd> {
         //let eng = Engine::new(); //replace with ref or something :(
 
-        self.current_board = None;//Some(Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &eng));
+        *self.current_board.lock().unwrap() = None;
+        //self.current_board = None;//Some(Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &eng));
 
         None
     }
@@ -177,7 +195,5 @@ impl UciInterface {
         }
         None
     }
-
-
 
 }

@@ -549,6 +549,20 @@ impl Board {
         [Board::pos_to_lan(*from), Board::pos_to_lan(*to), promo_to].join("")
     }
 
+    pub fn make_move(&mut self, str: &str) -> Board {
+        if str == "O-O" {
+            self.castle(80)
+        } else if str == "O-O-O" {
+            self.castle(88)
+        } else {
+            let from = Board::lan_to_pos(&str[0..2]);
+            let to = Board::lan_to_pos(&str[2..4]);
+            //println!("info string here");
+            self.move_piece(to, from)
+            //*self.current_board.lock().unwrap() = Some(old_board.unwrap().move_piece(to, from));
+        }
+    }
+
     #[allow(dead_code)]
     pub fn print_board(&self) {
         let set = [["P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"], 
