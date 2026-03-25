@@ -1,44 +1,79 @@
-name: "publish"
+name: Release Rust Binary
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*' # Triggers the workflow on pushes to tags starting with 'v', like v1.0.0
 
 jobs:
-  release:
-    name: Release - ${{ matrix.platform.os-name }}
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Automatically provided token for authentication
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+        # This step only creates the release initially; artifacts are uploaded later
+
+  build-and-upload:
+    needs: create-release
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-
-          - os-name: Linux-x86_64
-            runs-on: ubuntu-24.04
-            target: x86_64-unknown-linux-musl
-            
-          - os-name: Windows-x86_64
-            runs-on: windows-latest
-            target: x86_64-pc-windows-msvc
-
-          - os-name: macOS-x86_64
-            runs-on: macOS-latest
-            target: x86_64-apple-darwin
-
-          # more targets here ...
-
-    runs-on: ${{ matrix.platform.runs-on }}
+        target: [x86_64-unknown-linux-gnu, x86_64-pc-windows-gnu, x86_64-apple-darwin] # Specify your target platforms
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Build binary
-        uses: houseabsolute/actions-rust-cross@v1
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Build project
+        uses: actions-rs/cargo@v1
         with:
           command: build
-          target: ${{ matrix.platform.target }}
-          args: "--bin chicory --locked --release"
-          strip: true
-      - name: Publish artifacts and release
-        uses: houseabsolute/actions-rust-release@v0
+          args: --release --target=${{ matrix.target }}
+
+      - name: Package binary
+        shell: bash
+        run: |
+          # Define the binary name from your Cargo.toml (update if necessary)
+          BINARY_NAME="chicory"
+          # Determine the archive extension based on the target
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            ARCHIVE_EXT="zip"
+          else
+            ARCHIVE_EXT="tar.gz"
+          fi
+          ARCHIVE_NAME="${BINARY_NAME}-${{ matrix.target }}.${ARCHIVE_EXT}"
+          
+          # Create the archive with the release binary
+          cd target/${{ matrix.target }}/release
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            zip ../../../${ARCHIVE_NAME} ${BINARY_NAME}.exe
+          else
+            tar -czvf ../../../${ARCHIVE_NAME} ${BINARY_NAME}
+          fi
+          
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          executable-name: chicory
-          target: ${{ matrix.platform.target }}
+          files: ${{ env.ARCHIVE_NAME }}
+          # The 'files' input automatically finds the existing release created in the first job.
