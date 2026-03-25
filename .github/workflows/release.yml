@@ -7,6 +7,7 @@ on:
 
 jobs:
   release:
+    permissions: write-all
     name: Release - ${{ matrix.platform.os-name }}
     strategy:
       matrix:
