@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::mpsc;
 use std::thread;
 use crate::chicory::board::Board;
@@ -71,4 +72,23 @@ pub fn multi_perft(eng: &Engine, board: Board, depth: usize, thread_count: usize
     }
 
     sum
+}
+
+pub fn multi_perft_list(eng: &Engine, board: Board, depth: usize, thread_count: usize) -> (usize, Vec<(String, usize)>) {
+
+
+    //let mut results: HashMap<String, usize> = HashMap::new();
+    let mut result = vec![];
+    let mut total = 0;
+
+    let moves = eng.gen_moves(board);
+    for m in moves {
+        let (_, _, new_board, _) = m;
+
+        let child_total = multi_perft(&eng, new_board, depth-1, thread_count);
+        result.push((Board::move_to_lan(&m), child_total));
+        total += child_total;
+    }
+
+    (total, result)
 }

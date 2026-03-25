@@ -10,7 +10,10 @@ use std::{thread};
 //use std::time::{Instant};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Instant;
+use chicory::perft::multi_perft;
 use chicory::eval::eval;
+use crate::chicory::perft::multi_perft_list;
 
 fn main() {
     //let (tx, rx): (Sender<Cmd>, Receiver<Cmd>) = mpsc::channel();
@@ -44,7 +47,8 @@ fn main() {
             "stop" => interface.stop(),
             "quit" => interface.quit(),
             "setoption" => interface.set_option(commands),
-            _ => { None }
+            "perft" => interface.perft(commands),
+            _ => None
 
         };
 
@@ -108,7 +112,7 @@ fn main() {
 
 
                     //if finished_calculation.load(Ordering::Relaxed) {
-                        
+
                     //}
 
                 },
@@ -120,6 +124,32 @@ fn main() {
                     let stop_calculation_clone = Arc::clone(&stop_calculation);
                     stop_calculation.store(true, Ordering::Relaxed);
                 },
+                Cmd::Perft(depth) => {
+
+                    let eng = engine.clone();
+
+                    let board_ref = interface.current_board.clone();
+
+                    thread::spawn(move || {
+
+                        let board = {
+                            board_ref.lock().unwrap().clone()
+                        };
+                        let cal_board = board.unwrap();
+
+                        let time = Instant::now();
+                        let (count, list) = multi_perft_list(&eng, cal_board, depth, 8);
+                        let stop_time = time.elapsed().as_millis();
+
+                        for (moves, nodes) in list {
+                            println!("{}:  {}", moves, nodes);
+                        }
+                        println!("\n-----------------------------------\n");
+                        println!("Total Nodes   : {}", count);
+                        println!("Total Time    : {}", stop_time);
+                        println!("Nodes per Sec : {},", (count as f64 / stop_time as f64) * 1000.0);
+                    });
+                }
                 _ => {}
             }
 

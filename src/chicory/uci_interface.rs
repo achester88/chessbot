@@ -7,7 +7,8 @@ use crate::chicory::engine::Engine;
 pub enum Cmd {
     Set(Board),
     Stop,
-    GoInf
+    GoInf,
+    Perft(usize),
 }
 
 pub struct UciInterface {
@@ -194,6 +195,12 @@ impl UciInterface {
             }
         }
         None
+    }
+
+        pub fn perft(&mut self, command: Vec<&str>) -> Option<Cmd> {
+        let depth = command[1].parse::<usize>().unwrap();
+
+        Some(Cmd::Perft(depth))
     }
 
 }
