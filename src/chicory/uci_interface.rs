@@ -26,14 +26,14 @@ pub struct SearchInfo {
 pub struct UciInterface {
     pub current_board: Arc<Mutex<Option<Board>>>,
     //current_move: usize,
-    pub search_depth: usize,
+    pub max_search_depth: usize,
     engine: Arc<Engine>,
 }
 impl UciInterface {
     pub fn new(engine: Arc<Engine>) -> Self {
         UciInterface {
             current_board: Arc::new(Mutex::new(None)),
-            search_depth: 12,
+            max_search_depth: 12,
             engine: engine,
         }
     }
@@ -45,8 +45,8 @@ impl UciInterface {
         println!("id name {} {}", name, version);
         println!("id author {}", authors);
         println!(
-            "option name SearchDepth type spin default {} min 1 max 99",
-            self.search_depth
+            "option name MaxSearchDepth type spin default {} min 1 max 99",
+            self.max_search_depth
         );
         println!("uciok");
 
@@ -197,9 +197,9 @@ impl UciInterface {
     pub fn set_option(&mut self, command: Vec<&str>) -> Option<Cmd> {
         if command[1] == "name" {
             match command[2] {
-                "SearchDepth" => {
+                "MaxSearchDepth" => {
                     if command[3] == "value" {
-                        self.search_depth = command[4].parse().unwrap();
+                        self.max_search_depth = command[4].parse().unwrap();
                     }
                 }
                 _ => {}

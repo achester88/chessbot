@@ -90,7 +90,7 @@ fn main() {
                         if search_info.depth.is_some() {
                             stop_depth = search_info.depth.unwrap();
                         } else {
-                            stop_depth = interface.search_depth
+                            stop_depth = interface.max_search_depth
                         }
 
                         let mut depth = 1;
