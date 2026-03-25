@@ -26,7 +26,7 @@ pub struct Engine {
 
 impl Engine {
     pub fn new() -> Self {
-         Engine {
+        Engine {
             ray_attacks: gen_ray_attacks(),
             pawn_attacks: gen_pawn_attacks(),
             king_attacks: gen_king_attacks(),
@@ -83,7 +83,6 @@ impl Engine {
                         new_board.check_real = 0;
                         new_board.check_full = 0;
                         all_moves.push((from, to, new_board, None));
-
                     }
                 }
             }
@@ -105,18 +104,33 @@ impl Engine {
         if can_castle {
             match board.turn {
                 PieceColor::White => {
-                    if board.castling & 0b1000 == 0b1000 && (board.occupied & 0xe == 0) && self.can_castle_through(0xc, &board) { //queenside
-                        all_moves.push((88, 88,  board.castle(88), None));
-                    }
-                    if board.castling & 0b0100 == 0b0100 && (board.occupied & 0x60 == 0) && self.can_castle_through(0x60, &board) {
-                        all_moves.push((80, 80, board.castle(80), None));
-                    }
-                },
-                PieceColor::Black => {
-                    if board.castling & 0b0010 == 0b0010 && (board.occupied & 0xe00000000000000 == 0) && self.can_castle_through(0xc00000000000000, &board) { //queenside
+                    if board.castling & 0b1000 == 0b1000
+                        && (board.occupied & 0xe == 0)
+                        && self.can_castle_through(0xc, &board)
+                    {
+                        //queenside
                         all_moves.push((88, 88, board.castle(88), None));
                     }
-                    if board.castling & 0b0001 == 0b0001 && (board.occupied & 0x6000000000000000 == 0) && self.can_castle_through(0x6000000000000000, &board) { //kingside
+                    if board.castling & 0b0100 == 0b0100
+                        && (board.occupied & 0x60 == 0)
+                        && self.can_castle_through(0x60, &board)
+                    {
+                        all_moves.push((80, 80, board.castle(80), None));
+                    }
+                }
+                PieceColor::Black => {
+                    if board.castling & 0b0010 == 0b0010
+                        && (board.occupied & 0xe00000000000000 == 0)
+                        && self.can_castle_through(0xc00000000000000, &board)
+                    {
+                        //queenside
+                        all_moves.push((88, 88, board.castle(88), None));
+                    }
+                    if board.castling & 0b0001 == 0b0001
+                        && (board.occupied & 0x6000000000000000 == 0)
+                        && self.can_castle_through(0x6000000000000000, &board)
+                    {
+                        //kingside
                         all_moves.push((80, 80, board.castle(80), None));
                     }
                 }
@@ -133,10 +147,10 @@ impl Engine {
             for ii in 0..moves_to.len() {
                 let to = moves_to[ii];
 
-                if not_check || board.check_real & (1 << to) != 0 { //Not in check or to is in (check)
+                if not_check || board.check_real & (1 << to) != 0 {
+                    //Not in check or to is in (check)
                     all_moves.push((from, to, board.move_piece(to, from), None));
                 }
-
             }
         }
 
@@ -144,17 +158,16 @@ impl Engine {
         let mut i = 0;
 
         while i < all_moves.len() {
-
             let new_board = &mut all_moves[i].2;
 
             //enemy check
-                if king_pos.len() > 0 {
-                    let (cr, cf) = self.cal_check(new_board, king_pos[0], board.turn);
-                    new_board.check_real = cr;
-                    new_board.check_full = cf;
-                } else {
-                    new_board.check_real = 0;
-                    new_board.check_full = 0;
+            if king_pos.len() > 0 {
+                let (cr, cf) = self.cal_check(new_board, king_pos[0], board.turn);
+                new_board.check_real = cr;
+                new_board.check_full = cf;
+            } else {
+                new_board.check_real = 0;
+                new_board.check_full = 0;
             }
 
             //self check
@@ -163,19 +176,17 @@ impl Engine {
                 let self_king_pos = board_serialize(new_board.kings[board.turn]);
                 if self.cal_check(&new_board, self_king_pos[0], !board.turn) != (0, 0) {
                     all_moves.remove(i);
-                    //i -= 1;
                 } else {
                     i += 1;
                 }
             } else {
                 i += 1;
             }
-
         }
 
         all_moves
     }
-    
+
     pub fn can_castle_through(&self, pos: u64, board: &Board) -> bool {
         let sq = board_serialize(pos);
         let opp_color = !board.turn;
@@ -191,12 +202,16 @@ impl Engine {
                 if (1 << to) & attackable_check_pos != 0 {
                     let (_, pt) = board.lookup(to);
                     let (_, att) = match pt {
-                        PieceType::Pawn => (0, self.pawn_attacks[opp_color as usize][to]),//self.gen_pawn_moves(&board, to, opp_color), //en_pass??
+                        PieceType::Pawn => (0, self.pawn_attacks[opp_color as usize][to]), //self.gen_pawn_moves(&board, to, opp_color), //en_pass??
                         PieceType::Knight => self.gen_knight_moves(&board, to, opp_color),
-                        PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[opp_color]),
+                        PieceType::Bishop => {
+                            self.gen_bishop_moves(&board, to, board.pieces[opp_color])
+                        }
                         PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
-                        PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[opp_color]),
-                        PieceType::King => self.gen_king_moves(&board, to, opp_color)
+                        PieceType::Queen => {
+                            self.gen_queen_moves(&board, to, board.pieces[opp_color])
+                        }
+                        PieceType::King => self.gen_king_moves(&board, to, opp_color),
                     };
                     if (att & (1 << i)) != 0 {
                         return false;
@@ -209,28 +224,26 @@ impl Engine {
     }
 
     pub fn gen_knight_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
-
         let opp = match turn {
-        PieceColor::White => board.pieces[PieceColor::Black],
-        PieceColor::Black => board.pieces[PieceColor::White],
+            PieceColor::White => board.pieces[PieceColor::Black],
+            PieceColor::Black => board.pieces[PieceColor::White],
         };
         let attacks = self.knight_attacks[sq] & (!board.occupied | opp);
 
         (sq, attacks)
     }
-    
-    pub fn gen_king_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
 
+    pub fn gen_king_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
         let opp = match turn {
-        PieceColor::White => board.pieces[PieceColor::Black],
-        PieceColor::Black => board.pieces[PieceColor::White],
+            PieceColor::White => board.pieces[PieceColor::Black],
+            PieceColor::Black => board.pieces[PieceColor::White],
         };
-        
+
         let attacks = self.king_attacks[sq] & (!board.occupied | opp);
-        
+
         (sq, attacks)
     }
-    
+
     pub fn gen_pawn_moves(&self, board: &Board, sq: usize, turn: PieceColor) -> (usize, u64) {
         let mut moves = 0;
         let piece = 1 << sq;
@@ -247,9 +260,11 @@ impl Engine {
                 en_pass = 1 << board.en_passant;
             }
 
-            moves = moves | (self.pawn_attacks[PieceColor::White as usize][sq] & (board.pieces[PieceColor::Black as usize] | en_pass));
-
-        } else { //Black
+            moves = moves
+                | (self.pawn_attacks[PieceColor::White as usize][sq]
+                    & (board.pieces[PieceColor::Black as usize] | en_pass));
+        } else {
+            //Black
             moves = moves | (postshift::sout_one(piece) & !board.occupied);
             if (piece & 0xff000000000000) != 0 {
                 moves = moves | (postshift::sout_one(moves) & !board.occupied);
@@ -261,7 +276,9 @@ impl Engine {
                 en_pass = 1 << board.en_passant;
             }
 
-            moves = moves | (self.pawn_attacks[PieceColor::Black as usize][sq]  & (board.pieces[PieceColor::White as usize] | en_pass));
+            moves = moves
+                | (self.pawn_attacks[PieceColor::Black as usize][sq]
+                    & (board.pieces[PieceColor::White as usize] | en_pass));
         }
 
         //
@@ -315,7 +332,7 @@ impl Engine {
                     PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[opp_color]),
                     PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
                     PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[opp_color]),
-                    PieceType::King => self.gen_king_moves(&board, to, opp_color)
+                    PieceType::King => self.gen_king_moves(&board, to, opp_color),
                 };
                 if (att & (1 << pos)) != 0 {
                     let (cr, cf) = self.gen_check_info(&board, to, pos);
@@ -324,22 +341,21 @@ impl Engine {
                     check_full |= cf;
                 }
             }
-
         }
 
         (check_real, check_full)
     }
 
     pub fn gen_king_attackables(&self, pos: usize) -> u64 {
-        let board = self.ray_attacks[Dir::North as usize][pos] |
-            self.ray_attacks[Dir::NOEA as usize][pos] |
-            self.ray_attacks[Dir::East as usize][pos] |
-            self.ray_attacks[Dir::SOEA as usize][pos] |
-            self.ray_attacks[Dir::South as usize][pos] |
-            self.ray_attacks[Dir::SOWE as usize][pos] |
-            self.ray_attacks[Dir::West as usize][pos] |
-            self.ray_attacks[Dir::NOWE as usize][pos] |
-            self.knight_attacks[pos];
+        let board = self.ray_attacks[Dir::North as usize][pos]
+            | self.ray_attacks[Dir::NOEA as usize][pos]
+            | self.ray_attacks[Dir::East as usize][pos]
+            | self.ray_attacks[Dir::SOEA as usize][pos]
+            | self.ray_attacks[Dir::South as usize][pos]
+            | self.ray_attacks[Dir::SOWE as usize][pos]
+            | self.ray_attacks[Dir::West as usize][pos]
+            | self.ray_attacks[Dir::NOWE as usize][pos]
+            | self.knight_attacks[pos];
 
         board
     }
@@ -355,34 +371,51 @@ impl Engine {
         let check_full: u64; //king can not be on
 
         match pt {
-            PieceType::Pawn => { //TODO ACCOUNT FOR ALL!!! PIECES IN THIS MATCH
-                check_real = 0;//self pos added on return //1 << pos;//self.gen_pawn_moves(&board, pos, !board.turn);
+            PieceType::Pawn => {
+                //TODO ACCOUNT FOR ALL!!! PIECES IN THIS MATCH
+                check_real = 0; //self pos added on return //1 << pos;//self.gen_pawn_moves(&board, pos, !board.turn);
                 let (_, check_full_pre) = self.gen_pawn_moves(&board, pos, !board.turn);
-                check_full = check_full_pre & !(self.ray_attacks[Dir::North as usize][pos] | self.ray_attacks[Dir::South as usize][pos]);
-            },
+                check_full = check_full_pre
+                    & !(self.ray_attacks[Dir::North as usize][pos]
+                        | self.ray_attacks[Dir::South as usize][pos]);
+            }
             PieceType::Knight => {
                 (_, check_real) = self.gen_knight_moves(&board, pos, !board.turn);
                 (_, check_full) = self.gen_knight_moves(&kingless, pos, !board.turn);
-            },
+            }
             PieceType::Bishop => {
-                let raf = self.ray_attacks[Dir::NOEA as usize][king_pos] | self.ray_attacks[Dir::NOWE as usize][king_pos] | self.ray_attacks[Dir::SOEA as usize][king_pos] | self.ray_attacks[Dir::SOWE as usize][king_pos];
+                let raf = self.ray_attacks[Dir::NOEA as usize][king_pos]
+                    | self.ray_attacks[Dir::NOWE as usize][king_pos]
+                    | self.ray_attacks[Dir::SOEA as usize][king_pos]
+                    | self.ray_attacks[Dir::SOWE as usize][king_pos];
                 (_, check_real) = self.gen_bishop_moves(&board, pos, board.pieces[!board.turn]);
                 (_, check_full) = self.gen_bishop_moves(&kingless, pos, board.pieces[!board.turn]);
                 check_real = check_real & raf;
-            },
+            }
             PieceType::Rook => {
-                let raf = self.ray_attacks[Dir::North as usize][king_pos] | self.ray_attacks[Dir::South as usize][king_pos] | self.ray_attacks[Dir::East as usize][king_pos] | self.ray_attacks[Dir::West as usize][king_pos];
+                let raf = self.ray_attacks[Dir::North as usize][king_pos]
+                    | self.ray_attacks[Dir::South as usize][king_pos]
+                    | self.ray_attacks[Dir::East as usize][king_pos]
+                    | self.ray_attacks[Dir::West as usize][king_pos];
                 (_, check_real) = self.gen_rook_moves(&board, pos, board.pieces[!board.turn]);
                 (_, check_full) = self.gen_rook_moves(&kingless, pos, board.pieces[!board.turn]);
                 check_real = check_real & raf;
-            },
+            }
             PieceType::Queen => {
-                let raf = self.ray_attacks[Dir::North as usize][king_pos] | self.ray_attacks[Dir::South as usize][king_pos] | self.ray_attacks[Dir::East as usize][king_pos] | self.ray_attacks[Dir::West as usize][king_pos] | self.ray_attacks[Dir::NOEA as usize][king_pos] | self.ray_attacks[Dir::NOWE as usize][king_pos] | self.ray_attacks[Dir::SOEA as usize][king_pos] | self.ray_attacks[Dir::SOWE as usize][king_pos];
+                let raf = self.ray_attacks[Dir::North as usize][king_pos]
+                    | self.ray_attacks[Dir::South as usize][king_pos]
+                    | self.ray_attacks[Dir::East as usize][king_pos]
+                    | self.ray_attacks[Dir::West as usize][king_pos]
+                    | self.ray_attacks[Dir::NOEA as usize][king_pos]
+                    | self.ray_attacks[Dir::NOWE as usize][king_pos]
+                    | self.ray_attacks[Dir::SOEA as usize][king_pos]
+                    | self.ray_attacks[Dir::SOWE as usize][king_pos];
                 (_, check_real) = self.gen_queen_moves(&board, pos, board.pieces[!board.turn]);
                 (_, check_full) = self.gen_queen_moves(&kingless, pos, board.pieces[!board.turn]);
                 check_real = check_real & raf;
-            },
-            PieceType::King => { //NOT NEEDED PROBABLE
+            }
+            PieceType::King => {
+                //NOT NEEDED PROBABLE
                 (_, check_real) = self.gen_king_moves(&board, pos, !board.turn);
                 (_, check_full) = self.gen_king_moves(&kingless, pos, !board.turn);
             }
@@ -406,10 +439,7 @@ impl Engine {
         }
         attack
     }
-
 }
-
-//https://www.chessprogramming.org/On_an_empty_Board#Rays_by_Line
 
 fn dir_is_pos(dir: Dir) -> bool {
     match dir {
@@ -522,7 +552,6 @@ fn gen_pawn_attacks() -> Vec<Vec<u64>> {
 }
 
 fn gen_king_attacks() -> Vec<u64> {
-    
     let mut attacks: Vec<u64> = vec![0; 64];
 
     for i in 0..64 {
@@ -538,7 +567,6 @@ fn gen_king_attacks() -> Vec<u64> {
 }
 
 fn gen_knight_attacks() -> Vec<u64> {
-
     let mut attacks: Vec<u64> = vec![0; 64];
 
     for i in 0..64 {
@@ -559,5 +587,3 @@ fn gen_knight_attacks() -> Vec<u64> {
 
     attacks
 }
-
-//https://tearth.dev/bitboard-viewer/

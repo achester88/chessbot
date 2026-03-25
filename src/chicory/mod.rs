@@ -1,7 +1,7 @@
+pub mod bitboard;
 pub mod board;
 pub mod engine;
-pub mod bitboard;
-pub mod utils;
-pub mod uci_interface;
-pub mod perft;
 pub mod eval;
+pub mod perft;
+pub mod uci_interface;
+pub mod utils;

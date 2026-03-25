@@ -1,13 +1,13 @@
-use chicory::chicory::{board, engine};
 use board::Board;
-use engine::{Move};
+use chicory::chicory::{board, engine};
+use engine::Move;
 
-pub fn fen_arr(from: usize, new_boards: Vec<(usize, &str)> ) -> Vec<Move> {
+pub fn fen_arr(from: usize, new_boards: Vec<(usize, &str)>) -> Vec<Move> {
     let mut boards: Vec<Move> = vec![];
-    let eng = engine::Engine::new(); //Only for testing 
+    let eng = engine::Engine::new(); //Only for testing
 
     for (to, fen) in new_boards.iter() {
-        boards.push( (from, *to, Board::new(fen, &eng), None) );
+        boards.push((from, *to, Board::new(fen, &eng), None));
     }
 
     boards

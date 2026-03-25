@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-use std::sync::mpsc;
-use std::thread;
 use crate::chicory::board::Board;
 use crate::chicory::engine::Engine;
+use std::sync::mpsc;
+use std::thread;
 pub fn perft(eng: &Engine, board: Board, depth: usize) -> usize {
     let mut count = 0;
 
@@ -36,11 +35,12 @@ pub fn multi_perft(eng: &Engine, board: Board, depth: usize, thread_count: usize
     let group_r = moves.len() % thread_count;
 
     for i in 0..chunks.len() {
-        chunks[i] = moves[(group*i)..(group*(i+1))].to_vec();
+        chunks[i] = moves[(group * i)..(group * (i + 1))].to_vec();
     }
 
     if group_r != 0 {
-        chunks[thread_count-1] = moves[(group*(chunks.len()-1))..((group*(chunks.len()))+group_r)].to_vec();
+        chunks[thread_count - 1] =
+            moves[(group * (chunks.len() - 1))..((group * (chunks.len())) + group_r)].to_vec();
     }
 
     let (tx, rx) = mpsc::channel();
@@ -51,7 +51,7 @@ pub fn multi_perft(eng: &Engine, board: Board, depth: usize, thread_count: usize
             let ctx = tx.clone();
             s.spawn(move || {
                 let mut count = 0;
-                
+
                 for (_, _, b, _) in set {
                     count += perft(eng, b, depth - 1);
                 }
@@ -74,9 +74,12 @@ pub fn multi_perft(eng: &Engine, board: Board, depth: usize, thread_count: usize
     sum
 }
 
-pub fn multi_perft_list(eng: &Engine, board: Board, depth: usize, thread_count: usize) -> (usize, Vec<(String, usize)>) {
-
-
+pub fn multi_perft_list(
+    eng: &Engine,
+    board: Board,
+    depth: usize,
+    thread_count: usize,
+) -> (usize, Vec<(String, usize)>) {
     //let mut results: HashMap<String, usize> = HashMap::new();
     let mut result = vec![];
     let mut total = 0;
@@ -85,7 +88,7 @@ pub fn multi_perft_list(eng: &Engine, board: Board, depth: usize, thread_count: 
     for m in moves {
         let (_, _, new_board, _) = m;
 
-        let child_total = multi_perft(&eng, new_board, depth-1, thread_count);
+        let child_total = multi_perft(&eng, new_board, depth - 1, thread_count);
         result.push((Board::move_to_lan(&m), child_total));
         total += child_total;
     }

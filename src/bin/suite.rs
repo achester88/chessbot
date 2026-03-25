@@ -1,12 +1,12 @@
-use std::cmp::PartialEq;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::env;
-use std::process::ExitCode;
-use std::time::Instant;
 use chicory::chicory::board::Board;
 use chicory::chicory::engine::Engine;
 use chicory::chicory::perft::multi_perft;
+use std::cmp::PartialEq;
+use std::env;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::process::ExitCode;
+use std::time::Instant;
 
 #[derive(Debug, Clone)]
 struct LineInfo {
@@ -18,11 +18,10 @@ struct LineInfo {
 enum Status {
     Passed,
     Under,
-    Over
+    Over,
 }
 
 fn main() -> ExitCode {
-
     let args: Vec<String> = env::args().collect();
     let depth_limit = args[2].parse().unwrap();
     let file = File::open(args[1].clone()).unwrap();
@@ -45,7 +44,7 @@ fn main() -> ExitCode {
     println!("--------------------------------------------------");
 
     //Passed, Under, Over
-    let mut results = vec!(0, 0, 0);
+    let mut results = vec![0, 0, 0];
     let engine = Engine::new();
     let mut smallest: Option<LineInfo> = None;
     let mut smallest_i = 0;
@@ -56,7 +55,7 @@ fn main() -> ExitCode {
     while c < tests.len() {
         let test = &tests[c];
         let test_start = Instant::now();
-        println!("({}/{}) FEN: |{}|", c+1, tests.len(), test.fen);
+        println!("({}/{}) FEN: |{}|", c + 1, tests.len(), test.fen);
 
         let board = Board::new(&test.fen, &engine);
         let mut i = 0;
@@ -79,13 +78,19 @@ fn main() -> ExitCode {
                 Status::Passed => {
                     println!(" \x1b[1;32mPassed\x1b[0m");
                     results[0] += 1;
-                },
+                }
                 Status::Under => {
-                    println!(" \x1b[1;33mUnder\x1b[0m ({}%)", calc_over_under(count, test.node_count[i]));
+                    println!(
+                        " \x1b[1;33mUnder\x1b[0m ({}%)",
+                        calc_over_under(count, test.node_count[i])
+                    );
                     results[1] += 1;
-                },
+                }
                 Status::Over => {
-                    println!(" \x1b[1;31mOver\x1b[0m ({}%)", calc_over_under(count, test.node_count[i]));
+                    println!(
+                        " \x1b[1;31mOver\x1b[0m ({}%)",
+                        calc_over_under(count, test.node_count[i])
+                    );
                     results[2] += 1;
                 }
             }
@@ -106,9 +111,21 @@ fn main() -> ExitCode {
     println!("Total FENs Done: {:?}", c);
     println!("Total Test Done: {:?}", test_done);
     println!("Total Time: {:?}(s)\n", full_start.elapsed().as_secs_f64());
-    println!("\x1b[1;32mPassed\x1b[0m: {} ({}%)", results[0], calc_perc(results[0], test_done));
-    println!("\x1b[1;33mUnder\x1b[0m: {} ({}%)", results[1], calc_perc(results[1], test_done));
-    println!("\x1b[1;31mOver\x1b[0m: {} ({}%)\n", results[2], calc_perc(results[2], test_done));
+    println!(
+        "\x1b[1;32mPassed\x1b[0m: {} ({}%)",
+        results[0],
+        calc_perc(results[0], test_done)
+    );
+    println!(
+        "\x1b[1;33mUnder\x1b[0m: {} ({}%)",
+        results[1],
+        calc_perc(results[1], test_done)
+    );
+    println!(
+        "\x1b[1;31mOver\x1b[0m: {} ({}%)\n",
+        results[2],
+        calc_perc(results[2], test_done)
+    );
     if smallest.is_some() {
         println!("Smallest: |{}|", smallest.clone().unwrap().fen);
         println!("  Depth: {}", smallest_i);
@@ -116,13 +133,11 @@ fn main() -> ExitCode {
     }
     println!("\n-----------------------------------------------------");
 
-
     if results[1] == 0 && results[2] == 0 {
         ExitCode::SUCCESS
     } else {
         ExitCode::FAILURE
     }
-
 }
 
 fn calc_perc(amount: usize, total: usize) -> f32 {
@@ -152,7 +167,7 @@ fn read_line(prompt: &str) -> LineInfo {
     let mut fen = String::from(by_part[0]);
     fen = fen.trim().to_string();
 
-    let mut node_count: Vec<usize> = vec!(1);
+    let mut node_count: Vec<usize> = vec![1];
     let mut i = 1;
 
     while i < by_part.len() {
