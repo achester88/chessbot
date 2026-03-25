@@ -1,7 +1,7 @@
 # Chicory - Chess Engine 
 ![GitHub Release](https://img.shields.io/github/v/release/achester88/chicory-engine)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/achester88/chicory-engine/rust.yml)
-![GitHub License](https://img.shields.io/github/license/achester88/chicory-engine)
+![GitHub License](https://img.shields.io/badge/license-%20%20GNU%20GPLv3%20-green?style=plastic)
 
 ###### a UCI-compatible, dependence-less chess engine built in Rust 
 
