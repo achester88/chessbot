@@ -41,6 +41,26 @@ impl IndexMut<PieceColor> for [u64; 2] {
     }
 }
 
+impl Index<PieceColor> for [Option<u128>] {
+    type Output = Option<u128>;
+
+    fn index(&self, color: PieceColor) -> &Self::Output {
+        match color {
+            PieceColor::White => &self[0],
+            PieceColor::Black => &self[1],
+        }
+    }
+}
+
+impl IndexMut<PieceColor> for [Option<u128>; 2] {
+    fn index_mut(&mut self, color: PieceColor) -> &mut Self::Output {
+        match color {
+            PieceColor::White => &mut self[0],
+            PieceColor::Black => &mut self[1],
+        }
+    }
+}
+
 impl Not for PieceColor {
     type Output = PieceColor;
 

@@ -1,5 +1,6 @@
 mod chicory;
 
+use crate::chicory::board::PieceColor;
 use crate::chicory::perft::multi_perft_list;
 use board::*;
 use chicory::eval::eval;
@@ -30,7 +31,7 @@ fn main() {
             "uci" => interface.uci(),
             "isready" => interface.isready(),
             "position" => interface.position(commands),
-            "go" => interface.go(),
+            "go" => interface.go(commands),
             "ucinewgame" => interface.uci_new_game(),
             "stop" => interface.stop(),
             "quit" => interface.quit(),
@@ -41,32 +42,101 @@ fn main() {
 
         if cmd_out.is_some() {
             match cmd_out.unwrap() {
-                Cmd::GoInf => {
+                Cmd::Go(search_info) => {
                     let stop_calculation_clone = Arc::clone(&stop_calculation);
                     let finished_calculation_clone = Arc::clone(&finished_calculation);
                     let eng = engine.clone();
                     let board_ref = interface.current_board.clone();
 
                     thread::spawn(move || {
+                        let move_timer = Instant::now();
                         let board = { board_ref.lock().unwrap().clone() };
                         let cal_board = board.unwrap();
 
-                        let (_, best_move, _) = minmax(
-                            &eng,
-                            cal_board,
-                            interface.search_depth,
-                            i32::MIN,
-                            i32::MAX,
-                            cal_board.turn,
-                            1,
-                            &stop_calculation_clone,
-                            true,
-                        );
+                        let mut time_per_move = 0;
+
+                        let (current_time, per_move_time);
+                        let mut cur_best_score;
+
+                        match cal_board.turn {
+                            PieceColor::White => {
+                                (current_time, per_move_time) = (
+                                    search_info.current_time[PieceColor::White],
+                                    search_info.per_move_time[PieceColor::White],
+                                );
+                                cur_best_score = i32::MIN;
+                            }
+                            PieceColor::Black => {
+                                (current_time, per_move_time) = (
+                                    search_info.current_time[PieceColor::Black],
+                                    search_info.per_move_time[PieceColor::Black],
+                                );
+                                cur_best_score = i32::MAX;
+                            }
+                        }
+
+                        if search_info.movetime.is_some() {
+                            time_per_move = search_info.movetime.unwrap();
+                        } else if current_time.is_some() {
+                            time_per_move =
+                                (current_time.unwrap() / 20) + (per_move_time.unwrap_or(0) / 2);
+                            // base / 20 + increment / 2
+                        }
+
+                        let mut cur_best_move = None;
+
+                        let stop_depth: usize;
+
+                        if search_info.depth.is_some() {
+                            stop_depth = search_info.depth.unwrap();
+                        } else {
+                            stop_depth = interface.search_depth
+                        }
+
+                        let mut depth = 1;
+                        while !&stop_calculation_clone.load(Ordering::Relaxed)
+                            && (depth <= stop_depth || time_per_move == 0)
+                        {
+                            let (score, best_move, _) = minmax(
+                                &eng,
+                                cal_board,
+                                depth,
+                                i32::MIN,
+                                i32::MAX,
+                                cal_board.turn,
+                                1,
+                                &stop_calculation_clone,
+                                time_per_move,
+                                move_timer,
+                                true,
+                            );
+
+                            if time_per_move != 0
+                                && move_timer.elapsed().as_millis() > time_per_move
+                            {
+                                if cal_board.turn == PieceColor::White {
+                                    if score > cur_best_score {
+                                        cur_best_move = best_move;
+                                    }
+                                } else {
+                                    if score < cur_best_score {
+                                        cur_best_move = best_move;
+                                    }
+                                }
+
+                                break;
+                            } else {
+                                cur_best_score = score;
+                                cur_best_move = best_move;
+                            }
+
+                            depth += 1;
+                        }
 
                         finished_calculation_clone.store(true, Ordering::Relaxed);
 
-                        let (_, _, board, _) = best_move.unwrap(); //*best_move_lock;
-                        println!("bestmove {}", Board::move_to_lan(&best_move.unwrap()));
+                        let (_, _, board, _) = cur_best_move.unwrap(); //*best_move_lock;
+                        println!("bestmove {}", Board::move_to_lan(&cur_best_move.unwrap()));
                         *board_ref.lock().unwrap() = Some(board);
 
                         stop_calculation_clone.store(false, Ordering::Relaxed);

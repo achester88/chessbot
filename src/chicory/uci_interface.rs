@@ -1,14 +1,26 @@
-use crate::chicory::board::Board;
+use crate::chicory::board::{Board, PieceColor};
 use crate::chicory::engine::Engine;
 use std::sync::Arc;
 use std::sync::Mutex;
+
+type TimeInfo = [Option<u128>; 2];
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Cmd {
     Set(Board),
     Stop,
-    GoInf,
+    Go(SearchInfo),
     Perft(usize),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SearchInfo {
+    pub current_time: TimeInfo,
+    pub per_move_time: TimeInfo,
+    pub depth: Option<usize>,
+    pub nodes: Option<usize>,
+    pub movetime: Option<u128>,
+    pub infinite: bool,
 }
 
 pub struct UciInterface {
@@ -21,7 +33,7 @@ impl UciInterface {
     pub fn new(engine: Arc<Engine>) -> Self {
         UciInterface {
             current_board: Arc::new(Mutex::new(None)),
-            search_depth: 5,
+            search_depth: 12,
             engine: engine,
         }
     }
@@ -32,7 +44,10 @@ impl UciInterface {
         let version = env!("CARGO_PKG_VERSION");
         println!("id name {} {}", name, version);
         println!("id author {}", authors);
-        println!("option name SearchDepth type spin default 4 min 1 max 99");
+        println!(
+            "option name SearchDepth type spin default {} min 1 max 99",
+            self.search_depth
+        );
         println!("uciok");
 
         None
@@ -127,8 +142,43 @@ impl UciInterface {
         }
     }
 
-    pub fn go(&mut self) -> Option<Cmd> {
-        Some(Cmd::GoInf)
+    pub fn go(&mut self, command: Vec<&str>) -> Option<Cmd> {
+        let mut search_info = SearchInfo {
+            current_time: [None, None],
+            per_move_time: [None, None],
+            depth: None,
+            nodes: None,
+            movetime: None,
+            infinite: false,
+        };
+
+        let mut i = 1;
+
+        while (i + 1) < command.len() {
+            match command[i + 1].parse::<u128>() {
+                Ok(val) => {
+                    match command[i] {
+                        "wtime" => search_info.current_time[PieceColor::White] = Some(val),
+                        "btime" => search_info.current_time[PieceColor::Black] = Some(val),
+                        "winc" => search_info.per_move_time[PieceColor::White] = Some(val),
+                        "binc" => search_info.per_move_time[PieceColor::Black] = Some(val),
+                        "depth" => search_info.depth = Some(val as usize), //search x plies only.
+                        "nodes" => search_info.nodes = Some(val as usize), //search x nodes only,
+                        "movetime" => search_info.movetime = Some(val), //search exactly x mseconds
+                        _ => {}
+                    }
+                    i += 2;
+                }
+                Err(_) => {
+                    if command[i] == "infinite" {
+                        search_info.infinite = true;
+                    }
+                    i += 1;
+                }
+            }
+        }
+
+        Some(Cmd::Go(search_info))
     }
     pub fn uci_new_game(&mut self) -> Option<Cmd> {
         *self.current_board.lock().unwrap() = None;

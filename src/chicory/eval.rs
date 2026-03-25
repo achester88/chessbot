@@ -65,8 +65,12 @@ pub fn minmax(
     turn: PieceColor,
     par_moves: usize,
     stop_calculation: &AtomicBool,
+    time_per_move: u128,
+    move_timer: Instant,
     top: bool,
 ) -> (i32, Option<Move>, usize) {
+    let test_start = Instant::now();
+
     if depth == 0 {
         return (eval(&board), None, 1);
     }
@@ -92,11 +96,6 @@ pub fn minmax(
     let mut node_count = 0;
 
     for m in moves {
-        if stop_calculation.load(Ordering::Relaxed) {
-            break;
-        }
-
-        let test_start = Instant::now();
         let (score, _, nodes) = minmax(
             &eng,
             m.2,
@@ -106,19 +105,11 @@ pub fn minmax(
             !turn,
             total_nodes,
             stop_calculation,
+            time_per_move,
+            move_timer,
             false,
         );
         node_count += nodes;
-        if top {
-            println!(
-                "info depth {} nodes {} score cp {} time {} pv {}",
-                depth,
-                node_count,
-                score,
-                test_start.elapsed().as_millis(),
-                Board::move_to_lan(&m)
-            );
-        }
 
         match turn {
             PieceColor::White => {
@@ -141,9 +132,24 @@ pub fn minmax(
             }
         }
 
-        if beta <= alpha {
+        if beta <= alpha
+            || (stop_calculation.load(Ordering::Relaxed)
+                || ((depth > 4 || top)
+                    && (time_per_move != 0 && move_timer.elapsed().as_millis() > time_per_move)))
+        {
             break;
         }
+    }
+
+    if top {
+        println!(
+            "info depth {} nodes {} score cp {} time {} pv {}",
+            depth,
+            node_count,
+            best,
+            test_start.elapsed().as_millis(),
+            Board::move_to_lan(&best_move)
+        );
     }
 
     (best, Some(best_move), node_count)
