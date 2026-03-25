@@ -21,4 +21,4 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Run Perft Test Suite
-      run: cargo run --bin suite -- perftsuite.epd 4
+      run: cargo run --bin suite -- ./tests/perftsuite.epd 4
