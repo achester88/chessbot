@@ -5,7 +5,7 @@
 
 ###### a UCI-compatible, dependence-less chess engine built in Rust 
 
-Chicory uses bitboard for move generation and alpha-beta pruning, minmax for evaluation
+Chicory uses bitboards for fast move generation, with a handcrafted evaluation function and alpha-beta pruning to deliver a strong yet quick engine. A UCI-compatible GUI, such as [cutechess](https://github.com/cutechess/cutechess), is required for play.  
 
 
 ## Features
