@@ -83,6 +83,9 @@ pub fn minmax(
     let moves = eng.gen_moves(board);
 
     if moves.len() == 0 {
+        if board.check_real == 0 { //Stalemate
+            return (0, None, 1);
+        }
         return match !board.turn {
             PieceColor::White => (i32::MAX, None, 1),
             PieceColor::Black => (i32::MIN, None, 1),
