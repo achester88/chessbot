@@ -93,7 +93,11 @@ impl UciInterface {
             if i < command.len() && command[i] == "moves" {
                 i += 1;
                 while i < command.len() {
-                    self.read_move(&command[i]);
+                    cur_board = Some(
+                        cur_board
+                            .unwrap()
+                            .make_move(&command[i]),
+                    );
 
                     i += 1;
                 }
@@ -110,8 +114,6 @@ impl UciInterface {
                         i += 1;
                     }
 
-                    self.read_move(&all_moves[all_moves.len() - 1]);
-
                     cur_board = Some(
                         cur_board
                             .unwrap()
@@ -124,22 +126,6 @@ impl UciInterface {
         *self.current_board.lock().unwrap() = cur_board;
 
         Some(Cmd::Set(cur_board.unwrap()))
-    }
-
-    fn read_move(&mut self, str: &str) {
-        //println!("info string read_move");
-        let old_board = *self.current_board.lock().unwrap();
-
-        if str == "O-O" {
-            *self.current_board.lock().unwrap() = Some(old_board.unwrap().castle(80));
-        } else if str == "O-O-O" {
-            *self.current_board.lock().unwrap() = Some(old_board.unwrap().castle(88));
-        } else {
-            let from = Board::lan_to_pos(&str[0..2]);
-            let to = Board::lan_to_pos(&str[2..4]);
-
-            *self.current_board.lock().unwrap() = Some(old_board.unwrap().move_piece(to, from));
-        }
     }
 
     pub fn go(&mut self, command: Vec<&str>) -> Option<Cmd> {

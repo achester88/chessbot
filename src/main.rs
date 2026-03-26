@@ -114,6 +114,7 @@ fn main() {
                             if time_per_move != 0
                                 && move_timer.elapsed().as_millis() > time_per_move
                             {
+                                /*
                                 if cal_board.turn == PieceColor::White {
                                     if score > cur_best_score {
                                         cur_best_move = best_move;
@@ -123,6 +124,7 @@ fn main() {
                                         cur_best_move = best_move;
                                     }
                                 }
+                                */
 
                                 break;
                             } else {
