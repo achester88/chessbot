@@ -58,7 +58,6 @@ fn main() {
                         let mut time_per_move = 0;
 
                         let (current_time, per_move_time);
-                        let mut cur_best_score;
 
                         match cal_board.turn {
                             PieceColor::White => {
@@ -66,14 +65,12 @@ fn main() {
                                     search_info.current_time[PieceColor::White],
                                     search_info.per_move_time[PieceColor::White],
                                 );
-                                cur_best_score = i32::MIN;
                             }
                             PieceColor::Black => {
                                 (current_time, per_move_time) = (
                                     search_info.current_time[PieceColor::Black],
                                     search_info.per_move_time[PieceColor::Black],
                                 );
-                                cur_best_score = i32::MAX;
                             }
                         }
 
@@ -99,7 +96,7 @@ fn main() {
                         while !&stop_calculation_clone.load(Ordering::Relaxed)
                             && (depth <= stop_depth || time_per_move == 0)
                         {
-                            let (score, best_move, _) = minmax(
+                            let (_, best_move, _) = minmax(
                                 &eng,
                                 cal_board,
                                 depth,
@@ -116,21 +113,8 @@ fn main() {
                             if time_per_move != 0
                                 && move_timer.elapsed().as_millis() > time_per_move
                             {
-                                /*
-                                if cal_board.turn == PieceColor::White {
-                                    if score > cur_best_score {
-                                        cur_best_move = best_move;
-                                    }
-                                } else {
-                                    if score < cur_best_score {
-                                        cur_best_move = best_move;
-                                    }
-                                }
-                                */
-
                                 break;
                             } else {
-                                cur_best_score = score;
                                 cur_best_move = best_move;
                             }
 
