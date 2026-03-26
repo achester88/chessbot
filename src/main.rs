@@ -53,6 +53,8 @@ fn main() {
                         let board = { board_ref.lock().unwrap().clone() };
                         let cal_board = board.unwrap();
 
+                        println!("{:?}", cal_board);
+
                         let mut time_per_move = 0;
 
                         let (current_time, per_move_time);

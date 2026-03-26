@@ -395,7 +395,7 @@ impl Board {
     pub fn promote(&self, from: usize, to: usize) -> Vec<Move> {
         let mut new_board = self.clone();
 
-        let (pc, pt) = new_board.lookup(from);
+        let (pc, _) = new_board.lookup(from);
         let (old_pc, old_pt) = new_board.lookup(to);
 
         new_board.remove_castling(to, old_pt);
@@ -403,7 +403,7 @@ impl Board {
         new_board.next_turn();
 
         new_board.remove_piece(to, &old_pt, old_pc);
-        new_board.remove_piece(from, &pt, pc);
+        new_board.remove_piece(from, &PieceType::Pawn, pc);
 
         let mut new_boards = vec![new_board.clone(); 4];
 
@@ -426,6 +426,27 @@ impl Board {
         out.push((from, to, new_boards[3], Some(PieceType::Queen)));
 
         out
+    }
+
+    fn promote_pawn_to(&mut self, from: usize, to: usize, pt: PieceType) -> Board {
+        let mut new_board = self.clone();
+
+        let (pc, _) = new_board.lookup(from);
+        let (old_pc, old_pt) = new_board.lookup(to);
+
+        new_board.remove_castling(to, old_pt);
+
+        new_board.next_turn();
+
+        new_board.remove_piece(to, &old_pt, old_pc);
+        new_board.remove_piece(from, &PieceType::Pawn, pc);
+
+        new_board.add_piece(to, &pt, pc);
+
+        new_board.recalc_board();
+        new_board.en_passant = 65;
+
+        new_board
     }
 
     pub fn castle(&self, code: u8) -> Board {
@@ -452,7 +473,7 @@ impl Board {
                     king_to_pos = 6;
                 }
 
-                new_board.castling &= 0b0011_0011;
+                new_board.castling &= 0b0011;
             }
             PieceColor::Black => {
                 king_from_pos = 60;
@@ -468,7 +489,7 @@ impl Board {
                     king_to_pos = 62;
                 }
 
-                new_board.castling &= 0b1100_1100;
+                new_board.castling &= 0b1100;
             }
         }
 
@@ -545,16 +566,56 @@ impl Board {
         [Board::pos_to_lan(*from), Board::pos_to_lan(*to), promo_to].join("")
     }
 
-    pub fn make_move(&mut self, str: &str) -> Board {
+    pub fn make_move(&mut self, str: &str, engine: &Engine) -> Board {
+        //let mut new_board: Board;
+
+
+        /*
         if str == "O-O" {
-            self.castle(80)
+            new_board = self.castle(80);
         } else if str == "O-O-O" {
-            self.castle(88)
+            new_board = self.castle(88);
         } else {
             let from = Board::lan_to_pos(&str[0..2]);
             let to = Board::lan_to_pos(&str[2..4]);
-            self.move_piece(to, from)
+            new_board = self.move_piece(to, from);
         }
+        */
+        let mut new_board: Board;
+
+        if str.len() == 5 {
+            let from = Board::lan_to_pos(&str[0..2]);
+            let to = Board::lan_to_pos(&str[2..4]);
+            new_board = match str.chars().nth(4).unwrap() {
+                'k' | 'K' => self.promote_pawn_to(from, to, PieceType::Knight),
+                'b' | 'B' => self.promote_pawn_to(from, to, PieceType::Bishop),
+                'r' | 'R' => self.promote_pawn_to(from, to, PieceType::Rook),
+                'q' | 'Q' => self.promote_pawn_to(from, to, PieceType::Queen),
+                _ => self.clone()
+            }
+        } else {
+            new_board = match str {
+                "e1g1" | "e8g8" => self.castle(80),
+                "e1c1" | "e8c8" => self.castle(88),
+                _ => {
+                    let from = Board::lan_to_pos(&str[0..2]);
+                    let to = Board::lan_to_pos(&str[2..4]);
+                    self.move_piece(to, from)
+                }
+            };
+        }
+
+        let king_pos = board_serialize(new_board.kings[!self.turn]);
+        if king_pos.len() > 0 {
+            let (cr, cf) = engine.cal_check(&new_board, king_pos[0], self.turn);
+            new_board.check_real = cr;
+            new_board.check_full = cf;
+        } else {
+            new_board.check_real = 0;
+            new_board.check_full = 0;
+        }
+
+        return new_board;
     }
 
     #[allow(dead_code)]

@@ -96,29 +96,35 @@ impl UciInterface {
                     cur_board = Some(
                         cur_board
                             .unwrap()
-                            .make_move(&command[i]),
+                            .make_move(&command[i], &self.engine),
                     );
 
                     i += 1;
                 }
             }
         } else {
+            cur_board = Some(Board::new(
+                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                &self.engine,
+            ));
+
             if command[i] == "startpos" {
                 i += 1;
 
                 if i < command.len() && command[i] == "moves" {
                     i += 1;
-                    let mut all_moves = vec![];
+                    //let mut all_moves = vec![];
                     while i < command.len() {
-                        all_moves.push(&command[i]);
+                        //all_moves.push(&command[i]);
+                        cur_board = Some(
+                            cur_board
+                                .unwrap()
+                                .make_move(&command[i], &self.engine),
+                        );
                         i += 1;
+
                     }
 
-                    cur_board = Some(
-                        cur_board
-                            .unwrap()
-                            .make_move(&all_moves[all_moves.len() - 1]),
-                    );
                 }
             }
         }

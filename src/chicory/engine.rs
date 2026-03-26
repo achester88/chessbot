@@ -173,7 +173,7 @@ impl Engine {
             //self check
             let self_king_pos = board_serialize(new_board.kings[board.turn]);
             if self_king_pos.len() > 0 {
-                let self_king_pos = board_serialize(new_board.kings[board.turn]);
+                //let self_king_pos = board_serialize(new_board.kings[board.turn]);
                 if self.cal_check(&new_board, self_king_pos[0], !board.turn) != (0, 0) {
                     all_moves.remove(i);
                 } else {
@@ -355,7 +355,8 @@ impl Engine {
             | self.ray_attacks[Dir::SOWE as usize][pos]
             | self.ray_attacks[Dir::West as usize][pos]
             | self.ray_attacks[Dir::NOWE as usize][pos]
-            | self.knight_attacks[pos];
+            | self.knight_attacks[pos]
+            | (1 << pos);
 
         board
     }
