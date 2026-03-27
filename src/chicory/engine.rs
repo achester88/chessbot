@@ -3,7 +3,7 @@ use super::board::*;
 use super::utils::*;
 
 //          (from,  to,    new board)
-pub type Move = (usize, usize, Board, Option<PieceType>);
+//pub type Move = (usize, usize, Board, Option<PieceType>);
 
 #[derive(Debug, Clone, Copy)]
 pub enum Dir {
@@ -15,6 +15,14 @@ pub enum Dir {
     NOWE,
     SOWE,
     SOEA,
+}
+
+#[derive(Clone)]
+struct Move {
+    pub from: usize,
+    pub to: usize,
+    pub board: Board,
+    pub promote_to: Option<PieceType>
 }
 
 pub struct Engine {
@@ -149,7 +157,7 @@ impl Engine {
 
                 if not_check || board.check_real & (1 << to) != 0 {
                     //Not in check or to is in (check)
-                    all_moves.push((from, to, board.move_piece(to, from), None));
+                    all_moves.push(Move{from, to, board.move_piece(to, from), None});
                 }
             }
         }
@@ -158,7 +166,7 @@ impl Engine {
         let mut i = 0;
 
         while i < all_moves.len() {
-            let new_board = &mut all_moves[i].2;
+            let new_board = &mut all_moves[i].board;
 
             //enemy check
             if king_pos.len() > 0 {

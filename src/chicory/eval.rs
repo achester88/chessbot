@@ -101,7 +101,7 @@ pub fn minmax(
     for m in moves {
         let (score, _, nodes) = minmax(
             &eng,
-            m.2,
+            m.board,
             depth - 1,
             alpha,
             beta,
