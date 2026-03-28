@@ -85,7 +85,7 @@ pub fn minmax(
         PieceColor::Black => i32::MAX,
     };
 
-    let moves = eng.gen_moves(board);
+    let moves = order_moves(eng.gen_moves(board));
 
     if moves.len() == 0 {
         if board.check_real == 0 { //Stalemate
@@ -126,18 +126,14 @@ pub fn minmax(
                     best = score;
                     best_move = m;
                 }
-                if score > alpha {
-                    alpha = score;
-                }
+                alpha = alpha.max(score);
             }
             PieceColor::Black => {
                 if score < best {
                     best = score;
                     best_move = m;
                 }
-                if score < beta {
-                    beta = score;
-                }
+                beta = beta.min(score);
             }
         }
 
@@ -175,15 +171,42 @@ pub fn stopping_search(
     depth: usize,
 ) -> (i32, Option<Move>, usize) {
 
-    let mut best_score = eval(&board);
+    let score = eval(&board);
 
-    if best_score >= beta {
-        return (best_score, None, 1);
+    match turn {
+
+        PieceColor::White => {
+
+            if score >= beta {
+                return (beta, None, 1);
+            }
+
+            alpha = alpha.max(score);
+        }
+
+        PieceColor::Black => {
+
+            if score <= alpha {
+                return (alpha, None, 1);
+            }
+
+            beta = beta.min(score);
+        }
     }
 
-    alpha = alpha.max(best_score);
+    let moves = order_moves(eng.gen_moves(board));
 
-    let moves = eng.gen_moves(board);
+    if moves.is_empty() {
+
+        if board.check_real == 0 {
+            return (0, None, 1);
+        }
+
+        return match turn {
+            PieceColor::White => (i32::MIN, None, 1),
+            PieceColor::Black => (i32::MAX, None, 1),
+        };
+    }
 
     if moves.len() == 0 {
         if board.check_real == 0 { //Stalemate
@@ -202,7 +225,7 @@ pub fn stopping_search(
     let mut node_count = 0;
 
     for m in moves {
-        if m.board.check_real != 0 || m.capture {
+        if m.capture { //|| m.board.check_real != 0
             let (score, _, nodes) = stopping_search(
                 &eng,
                 m.board,
@@ -218,7 +241,7 @@ pub fn stopping_search(
             );
         node_count += nodes;
 
-            /*
+
             match turn {
                 PieceColor::White => {
                     if score >= beta {
@@ -232,16 +255,8 @@ pub fn stopping_search(
                     }
                     beta = beta.min(score);
                 }
-            }*/
-            if score >= beta {
-                return (score, None, 0);
             }
-            if score > best_score {
-                best_score = score
-            }
-            if score > alpha {
-                alpha = score;
-            }
+
 
         if stop_calculation.load(Ordering::Relaxed)
             || (top)
@@ -252,19 +267,36 @@ pub fn stopping_search(
             }
     }
 
-    /*
-    if top {
-        println!(
-            "info depth {} nodes {} time {}",
-            depth,
-            node_count,
-            test_start.elapsed().as_millis()
-        );
+    match turn {
+        PieceColor::White => (alpha, None, node_count + 1),
+        PieceColor::Black => (beta, None, node_count + 1),
     }
-    */
+    //(best_score, None, 0)
+}
 
-    //(alpha, None, 1)
-    (best_score, None, 0)
+fn order_moves(mut moves: Vec<Move>) -> Vec<Move> {
+    let mut out: Vec<Move> = vec![];
+
+    let mut i = 0;
+    while i < moves.len() {
+        if moves[i].promote_to.is_some() {
+            out.push(moves[i]);
+            moves.remove(i);
+        } else {
+            i += 1;
+        }
+    }
+    i = 0;
+    while i < moves.len() {
+        if moves[i].capture {
+            out.push(moves[i]);
+            moves.remove(i);
+        } else {
+            i += 1;
+        }
+    }
+    out.append(&mut moves);
+    out
 }
 
 pub fn eval(board: &Board) -> i32 {
