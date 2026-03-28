@@ -67,6 +67,7 @@ pub fn minmax(
     stop_calculation: &AtomicBool,
     time_per_move: u128,
     move_timer: Instant,
+    eval_first: Option<Move>,
     top: bool,
     capture: bool
 ) -> (i32, Option<Move>, usize) {
@@ -85,7 +86,7 @@ pub fn minmax(
         PieceColor::Black => i32::MAX,
     };
 
-    let moves = order_moves(eng.gen_moves(board));
+    let mut moves = order_moves(eng.gen_moves(board));
 
     if moves.len() == 0 {
         if board.check_real == 0 { //Stalemate
@@ -103,6 +104,10 @@ pub fn minmax(
 
     let mut node_count = 0;
 
+    if eval_first.is_some() {
+        moves.insert(0, eval_first.unwrap());
+    }
+
     for m in moves {
         let (score, _, nodes) = minmax(
             &eng,
@@ -115,6 +120,7 @@ pub fn minmax(
             stop_calculation,
             time_per_move,
             move_timer,
+            None,
             false,
             m.capture
         );

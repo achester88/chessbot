@@ -107,6 +107,7 @@ fn main() {
                                 &stop_calculation_clone,
                                 time_per_move,
                                 move_timer,
+                                None,
                                 true,
                                 false
                             );
