@@ -68,11 +68,16 @@ pub fn minmax(
     time_per_move: u128,
     move_timer: Instant,
     top: bool,
+    capture: bool
 ) -> (i32, Option<Move>, usize) {
     let test_start = Instant::now();
 
     if depth == 0 {
-        return (eval(&board), None, 1);
+        return if capture || board.check_real != 0 {
+            stopping_search(&eng, board, alpha, beta, turn, par_moves, stop_calculation, time_per_move, move_timer, true, 0) //(eval(&board), None, 1);
+        } else {
+            (eval(&board), None, 1)
+        }
     }
 
     let mut best = match turn {
@@ -86,9 +91,9 @@ pub fn minmax(
         if board.check_real == 0 { //Stalemate
             return (0, None, 1);
         }
-        return match !board.turn {
-            PieceColor::White => (i32::MAX, None, 1),
-            PieceColor::Black => (i32::MIN, None, 1),
+        return match turn {
+            PieceColor::White => (i32::MIN, None, 1),
+            PieceColor::Black => (i32::MAX, None, 1),
         };
     }
 
@@ -111,6 +116,7 @@ pub fn minmax(
             time_per_move,
             move_timer,
             false,
+            m.capture
         );
         node_count += nodes;
 
@@ -135,10 +141,7 @@ pub fn minmax(
             }
         }
 
-        if beta <= alpha
-            || (stop_calculation.load(Ordering::Relaxed)
-                || ((depth > 4 || top)
-                    && (time_per_move != 0 && move_timer.elapsed().as_millis() > time_per_move)))
+        if beta <= alpha || stop_calculation.load(Ordering::Relaxed) || ((depth > 4 || top) && (time_per_move != 0 && move_timer.elapsed().as_millis() > time_per_move))
         {
             break;
         }
@@ -156,6 +159,112 @@ pub fn minmax(
     }
 
     (best, Some(best_move), node_count)
+}
+
+pub fn stopping_search(
+    eng: &Engine,
+    board: Board,
+    mut alpha: i32,
+    mut beta: i32,
+    turn: PieceColor,
+    par_moves: usize,
+    stop_calculation: &AtomicBool,
+    time_per_move: u128,
+    move_timer: Instant,
+    top: bool,
+    depth: usize,
+) -> (i32, Option<Move>, usize) {
+
+    let mut best_score = eval(&board);
+
+    if best_score >= beta {
+        return (best_score, None, 1);
+    }
+
+    alpha = alpha.max(best_score);
+
+    let moves = eng.gen_moves(board);
+
+    if moves.len() == 0 {
+        if board.check_real == 0 { //Stalemate
+            return (0, None, 1);
+        }
+        return match turn {
+            PieceColor::White => (i32::MIN, None, 1),
+            PieceColor::Black => (i32::MAX, None, 1),
+        };
+    }
+
+    //let mut best_move = moves[0];
+
+    let total_nodes = par_moves * moves.len();
+
+    let mut node_count = 0;
+
+    for m in moves {
+        if m.board.check_real != 0 || m.capture {
+            let (score, _, nodes) = stopping_search(
+                &eng,
+                m.board,
+                alpha,
+                beta,
+                !turn,
+                total_nodes,
+                stop_calculation,
+                time_per_move,
+                move_timer,
+                false,
+                depth + 1
+            );
+        node_count += nodes;
+
+            /*
+            match turn {
+                PieceColor::White => {
+                    if score >= beta {
+                        return (beta, None, 0);
+                    }
+                    alpha = alpha.max(score);
+                },
+                PieceColor::Black => {
+                    if score <= alpha {
+                        return (alpha, None, 0);
+                    }
+                    beta = beta.min(score);
+                }
+            }*/
+            if score >= beta {
+                return (score, None, 0);
+            }
+            if score > best_score {
+                best_score = score
+            }
+            if score > alpha {
+                alpha = score;
+            }
+
+        if stop_calculation.load(Ordering::Relaxed)
+            || (top)
+            && (time_per_move != 0 && move_timer.elapsed().as_millis() > time_per_move)
+        {
+            break;
+        }
+            }
+    }
+
+    /*
+    if top {
+        println!(
+            "info depth {} nodes {} time {}",
+            depth,
+            node_count,
+            test_start.elapsed().as_millis()
+        );
+    }
+    */
+
+    //(alpha, None, 1)
+    (best_score, None, 0)
 }
 
 pub fn eval(board: &Board) -> i32 {

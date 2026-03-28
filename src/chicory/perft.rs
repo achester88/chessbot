@@ -86,8 +86,8 @@ pub fn multi_perft_list(
     let moves = eng.gen_moves(board);
     for m in moves {
 
-        let child_total = multi_perft(&eng, new_board, depth - 1, thread_count);
-        result.push((Board::move_to_lan(&m.board), child_total));
+        let child_total = multi_perft(&eng, m.board, depth - 1, thread_count);
+        result.push((Board::move_to_lan(&m), child_total));
         total += child_total;
     }
 

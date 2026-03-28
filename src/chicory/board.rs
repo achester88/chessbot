@@ -214,41 +214,42 @@ impl Board {
         new_board
     }
 
-    pub fn lookup(&self, pos: usize) -> (PieceColor, PieceType) {
+    pub fn lookup(&self, pos: usize) -> Option<(PieceColor, PieceType)> {
         let board = 1 << pos;
 
         let color: PieceColor;
 
         if board & self.pieces[PieceColor::White] != 0 {
             color = PieceColor::White;
-        } else {
+        } else if board & self.pieces[PieceColor::Black] != 0 {
             color = PieceColor::Black;
+        } else {
+            return None;
         }
 
         if board & (self.pawns[color] | self.bishops[color] | self.knights[color]) != 0 {
             if board & self.pawns[color] != 0 {
-                (color, PieceType::Pawn)
+                Some((color, PieceType::Pawn))
             } else if board & self.bishops[color] != 0 {
-                (color, PieceType::Bishop)
+                Some((color, PieceType::Bishop))
             } else {
-                (color, PieceType::Knight)
+                Some((color, PieceType::Knight))
             }
         } else {
             if board & self.rooks[color] != 0 {
-                (color, PieceType::Rook)
+                Some((color, PieceType::Rook))
             } else if board & self.queens[color] != 0 {
-                (color, PieceType::Queen)
+                Some((color, PieceType::Queen))
             } else {
-                (color, PieceType::King)
+                Some((color, PieceType::King))
             }
         }
     }
 
-    pub fn move_piece(&self, to: usize, from: usize) -> Board {
+    pub fn move_piece(&self, to: usize, from: usize) -> Move {
         let mut new_board = self.clone();
 
-        let (pc, pt) = self.lookup(from);
-        let (old_pc, old_pt) = self.lookup(to);
+        let (pc, pt) = self.lookup(from).unwrap(); //To piece should always be there
 
         //Check if en_passant needs updating
         new_board.en_passant_check(to, from, &pt);
@@ -288,10 +289,16 @@ impl Board {
             }
         }
 
-        new_board.remove_castling(to, old_pt);
+        let capture = match self.lookup(to) {
+            Some((old_pc, old_pt)) => {
+                new_board.remove_castling(to, old_pt);
+                new_board.remove_piece(to, &old_pt, old_pc);
+                //Remove Opps piece from to pos
+                true
+            },
+            None =>  false
+        };
 
-        //Remove Opps piece from to pos
-        new_board.remove_piece(to, &old_pt, old_pc);
         //Remove from pos piece
         new_board.remove_piece(from, &pt, pc);
         //Add piece to to pos
@@ -301,7 +308,8 @@ impl Board {
 
         new_board.next_turn();
 
-        new_board
+        //new_board
+        Move{from, to, board: new_board, promote_to: None, capture}
     }
 
     fn en_passant_check(&mut self, to: usize, from: usize, pt: &PieceType) {
@@ -395,14 +403,24 @@ impl Board {
     pub fn promote(&self, from: usize, to: usize) -> Vec<Move> {
         let mut new_board = self.clone();
 
-        let (pc, _) = new_board.lookup(from);
-        let (old_pc, old_pt) = new_board.lookup(to);
+        let (pc, _) = new_board.lookup(from).unwrap();
+        //let (old_pc, old_pt) = new_board.lookup(to);
 
-        new_board.remove_castling(to, old_pt);
+        let capture = match self.lookup(to) {
+            Some((old_pc, old_pt)) => {
+                new_board.remove_castling(to, old_pt);
+                new_board.remove_piece(to, &old_pt, old_pc);
+                //Remove Opps piece from to pos
+                true
+            },
+            None =>  false
+        };
+
+        //new_board.remove_castling(to, old_pt);
 
         new_board.next_turn();
 
-        new_board.remove_piece(to, &old_pt, old_pc);
+        //new_board.remove_piece(to, &old_pt, old_pc);
         new_board.remove_piece(from, &PieceType::Pawn, pc);
 
         let mut new_boards = vec![new_board.clone(); 4];
@@ -420,25 +438,33 @@ impl Board {
             new_boards[i].en_passant = 65;
         }
 
-        out.push((from, to, new_boards[0], Some(PieceType::Knight)));
-        out.push((from, to, new_boards[1], Some(PieceType::Bishop)));
-        out.push((from, to, new_boards[2], Some(PieceType::Rook)));
-        out.push((from, to, new_boards[3], Some(PieceType::Queen)));
+        out.push(Move{from, to, board: new_boards[0], promote_to: Some(PieceType::Knight), capture});
+        out.push(Move{from, to, board: new_boards[1], promote_to: Some(PieceType::Bishop), capture});
+        out.push(Move{from, to, board: new_boards[2], promote_to: Some(PieceType::Rook), capture});
+        out.push(Move{from, to, board: new_boards[3], promote_to: Some(PieceType::Queen), capture});
 
         out
     }
 
-    fn promote_pawn_to(&mut self, from: usize, to: usize, pt: PieceType) -> Board {
+    fn promote_pawn_to(&mut self, from: usize, to: usize, pt: PieceType) -> Move {
         let mut new_board = self.clone();
 
-        let (pc, _) = new_board.lookup(from);
-        let (old_pc, old_pt) = new_board.lookup(to);
+        let (pc, _) = new_board.lookup(from).unwrap();
+        //let (old_pc, old_pt) = new_board.lookup(to);
 
-        new_board.remove_castling(to, old_pt);
+        let capture = match self.lookup(to) {
+            Some((old_pc, old_pt)) => {
+                new_board.remove_castling(to, old_pt);
+                new_board.remove_piece(to, &old_pt, old_pc);
+                //Remove Opps piece from to pos
+                true
+            },
+            None =>  false
+        };
+
 
         new_board.next_turn();
 
-        new_board.remove_piece(to, &old_pt, old_pc);
         new_board.remove_piece(from, &PieceType::Pawn, pc);
 
         new_board.add_piece(to, &pt, pc);
@@ -446,10 +472,11 @@ impl Board {
         new_board.recalc_board();
         new_board.en_passant = 65;
 
-        new_board
+        //new_board
+        Move{from, to, board: new_board, promote_to: Some(pt), capture}
     }
 
-    pub fn castle(&self, code: u8) -> Board {
+    pub fn castle(&self, code: u8) -> Move {
         let mut new_board = self.clone();
 
         let king_from_pos: usize;
@@ -505,7 +532,8 @@ impl Board {
 
         new_board.next_turn();
 
-        new_board
+        //new_board
+        Move{from: code as usize, to: code as usize, board: new_board, promote_to: None, capture: false}
     }
 
     fn next_turn(&mut self) {
@@ -538,21 +566,21 @@ impl Board {
     }
 
     pub fn move_to_lan(cur_move: &Move) -> String {
-        let (from, to, new_board, promo_type) = cur_move;
+        //let (Move{from, to, board: new_board, promote_to: promo_type, _}) = cur_move;
 
-        if to == &80 {
-            return match !new_board.turn {
+        if cur_move.to == 80 {
+            return match !cur_move.board.turn {
                 PieceColor::White => String::from("e1g1"),
                 PieceColor::Black => String::from("e8g8"),
             };
-        } else if to == &88 {
-            return match !new_board.turn {
+        } else if cur_move.to == 88 {
+            return match !cur_move.board.turn {
                 PieceColor::White => String::from("e1c1"),
                 PieceColor::Black => String::from("e8c8"),
             };
         }
 
-        let promo_to = match promo_type {
+        let promo_to = match cur_move.promote_to {
             Some(x) => match x {
                 PieceType::Queen => String::from("q"),
                 PieceType::Rook => String::from("r"),
@@ -563,7 +591,7 @@ impl Board {
             None => String::from(""),
         };
 
-        [Board::pos_to_lan(*from), Board::pos_to_lan(*to), promo_to].join("")
+        [Board::pos_to_lan(cur_move.from), Board::pos_to_lan(cur_move.to), promo_to].join("")
     }
 
     pub fn make_move(&mut self, str: &str, engine: &Engine) -> Board {
@@ -581,20 +609,20 @@ impl Board {
             new_board = self.move_piece(to, from);
         }
         */
-        let mut new_board: Board;
+        let mut new_move: Move;
 
         if str.len() == 5 {
             let from = Board::lan_to_pos(&str[0..2]);
             let to = Board::lan_to_pos(&str[2..4]);
-            new_board = match str.chars().nth(4).unwrap() {
+            new_move = match str.chars().nth(4).unwrap() {
                 'k' | 'K' => self.promote_pawn_to(from, to, PieceType::Knight),
                 'b' | 'B' => self.promote_pawn_to(from, to, PieceType::Bishop),
                 'r' | 'R' => self.promote_pawn_to(from, to, PieceType::Rook),
                 'q' | 'Q' => self.promote_pawn_to(from, to, PieceType::Queen),
-                _ => self.clone()
+                _ => { Move {from: 100, to: 100, board: self.clone(), promote_to: None, capture: false} }
             }
         } else {
-            new_board = match str {
+            new_move = match str {
                 "e1g1" | "e8g8" => self.castle(80),
                 "e1c1" | "e8c8" => self.castle(88),
                 _ => {
@@ -605,17 +633,17 @@ impl Board {
             };
         }
 
-        let king_pos = board_serialize(new_board.kings[!self.turn]);
+        let king_pos = board_serialize(new_move.board.kings[!self.turn]);
         if king_pos.len() > 0 {
-            let (cr, cf) = engine.cal_check(&new_board, king_pos[0], self.turn);
-            new_board.check_real = cr;
-            new_board.check_full = cf;
+            let (cr, cf) = engine.cal_check(&new_move.board, king_pos[0], self.turn);
+            new_move.board.check_real = cr;
+            new_move.board.check_full = cf;
         } else {
-            new_board.check_real = 0;
-            new_board.check_full = 0;
+            new_move.board.check_real = 0;
+            new_move.board.check_full = 0;
         }
 
-        return new_board;
+        return new_move.board;
     }
 
     #[allow(dead_code)]

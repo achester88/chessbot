@@ -108,6 +108,7 @@ fn main() {
                                 time_per_move,
                                 move_timer,
                                 true,
+                                false
                             );
 
                             if time_per_move != 0
@@ -123,9 +124,9 @@ fn main() {
 
                         finished_calculation_clone.store(true, Ordering::Relaxed);
 
-                        let (_, _, board, _) = cur_best_move.unwrap(); //*best_move_lock;
+                        //let (_, _, board, _) = cur_best_move.unwrap(); //*best_move_lock;
                         println!("bestmove {}", Board::move_to_lan(&cur_best_move.unwrap()));
-                        *board_ref.lock().unwrap() = Some(board);
+                        *board_ref.lock().unwrap() = Some(cur_best_move.unwrap().board);
 
                         stop_calculation_clone.store(false, Ordering::Relaxed);
                     });

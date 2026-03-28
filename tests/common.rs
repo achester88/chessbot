@@ -7,7 +7,7 @@ pub fn fen_arr(from: usize, new_boards: Vec<(usize, &str)>) -> Vec<Move> {
     let eng = engine::Engine::new(); //Only for testing
 
     for (to, fen) in new_boards.iter() {
-        boards.push((from, *to, Board::new(fen, &eng), None));
+        boards.push((Move{from, to: *to, board: Board::new(fen, &eng), promote_to: None, capture: false}));
     }
 
     boards
@@ -18,14 +18,15 @@ pub fn assert_fen_arr(eng_arr: &mut Vec<Move>, expc_arr: &mut Vec<Move>) {
         //let mut board2 = board.clone();
 
         //Would be better to add proper check, but would need to change all fen values in all test
-        eng_arr[i].2.castling &= 0b0000_1111;
-        eng_arr[i].3 = None;
+        eng_arr[i].board.castling &= 0b0000_1111;
+        eng_arr[i].promote_to = None;
+        eng_arr[i].capture = false;
     }
 
     for i in 0..expc_arr.len() {
         //let (from, to, board) = m;
         //let mut board2 = board.clone();
-        expc_arr[i].2.castling &= 0b0000_1111;
+        expc_arr[i].board.castling &= 0b0000_1111;
     }
 
     assert_eq!(eng_arr, expc_arr);

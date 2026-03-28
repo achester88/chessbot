@@ -17,12 +17,13 @@ pub enum Dir {
     SOEA,
 }
 
-#[derive(Clone)]
-struct Move {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Move {
     pub from: usize,
     pub to: usize,
     pub board: Board,
-    pub promote_to: Option<PieceType>
+    pub promote_to: Option<PieceType>,
+    pub capture: bool
 }
 
 pub struct Engine {
@@ -87,10 +88,10 @@ impl Engine {
                     let to = moves_to[i];
 
                     if (1 << to) & board.check_full == 0 {
-                        let mut new_board = board.move_piece(to, from);
-                        new_board.check_real = 0;
-                        new_board.check_full = 0;
-                        all_moves.push((from, to, new_board, None));
+                        let mut new_move = board.move_piece(to, from);
+                        new_move.board.check_real = 0;
+                        new_move.board.check_full = 0;
+                        all_moves.push(new_move);
                     }
                 }
             }
@@ -117,13 +118,13 @@ impl Engine {
                         && self.can_castle_through(0xc, &board)
                     {
                         //queenside
-                        all_moves.push((88, 88, board.castle(88), None));
+                        all_moves.push(board.castle(88));
                     }
                     if board.castling & 0b0100 == 0b0100
                         && (board.occupied & 0x60 == 0)
                         && self.can_castle_through(0x60, &board)
                     {
-                        all_moves.push((80, 80, board.castle(80), None));
+                        all_moves.push(board.castle(80));
                     }
                 }
                 PieceColor::Black => {
@@ -132,14 +133,14 @@ impl Engine {
                         && self.can_castle_through(0xc00000000000000, &board)
                     {
                         //queenside
-                        all_moves.push((88, 88, board.castle(88), None));
+                        all_moves.push(board.castle(88));
                     }
                     if board.castling & 0b0001 == 0b0001
                         && (board.occupied & 0x6000000000000000 == 0)
                         && self.can_castle_through(0x6000000000000000, &board)
                     {
                         //kingside
-                        all_moves.push((80, 80, board.castle(80), None));
+                        all_moves.push(board.castle(80));
                     }
                 }
             }
@@ -157,7 +158,7 @@ impl Engine {
 
                 if not_check || board.check_real & (1 << to) != 0 {
                     //Not in check or to is in (check)
-                    all_moves.push(Move{from, to, board.move_piece(to, from), None});
+                    all_moves.push(board.move_piece(to, from));
                 }
             }
         }
@@ -208,22 +209,27 @@ impl Engine {
 
             for to in hits_pos {
                 if (1 << to) & attackable_check_pos != 0 {
-                    let (_, pt) = board.lookup(to);
-                    let (_, att) = match pt {
-                        PieceType::Pawn => (0, self.pawn_attacks[opp_color as usize][to]), //self.gen_pawn_moves(&board, to, opp_color), //en_pass??
-                        PieceType::Knight => self.gen_knight_moves(&board, to, opp_color),
-                        PieceType::Bishop => {
-                            self.gen_bishop_moves(&board, to, board.pieces[opp_color])
-                        }
-                        PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
-                        PieceType::Queen => {
-                            self.gen_queen_moves(&board, to, board.pieces[opp_color])
-                        }
-                        PieceType::King => self.gen_king_moves(&board, to, opp_color),
-                    };
-                    if (att & (1 << i)) != 0 {
-                        return false;
+                    match board.lookup(to) {
+                        Some((_, pt)) => {
+                            let (_, att) = match pt {
+                                PieceType::Pawn => (0, self.pawn_attacks[opp_color as usize][to]), //self.gen_pawn_moves(&board, to, opp_color), //en_pass??
+                                PieceType::Knight => self.gen_knight_moves(&board, to, opp_color),
+                                PieceType::Bishop => {
+                                    self.gen_bishop_moves(&board, to, board.pieces[opp_color])
+                                }
+                                PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
+                                PieceType::Queen => {
+                                    self.gen_queen_moves(&board, to, board.pieces[opp_color])
+                                }
+                                PieceType::King => self.gen_king_moves(&board, to, opp_color),
+                            };
+                            if (att & (1 << i)) != 0 {
+                                return false;
+                            }
+                        },
+                        None => {}
                     }
+
                 }
             }
         }
@@ -333,21 +339,27 @@ impl Engine {
 
         for to in hits_pos {
             if (1 << to) & attackable_check_pos != 0 {
-                let (_, pt) = board.lookup(to);
-                let (_, att) = match pt {
-                    PieceType::Pawn => self.gen_pawn_moves(&board, to, opp_color), //en_pass??
-                    PieceType::Knight => self.gen_knight_moves(&board, to, opp_color),
-                    PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[opp_color]),
-                    PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
-                    PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[opp_color]),
-                    PieceType::King => self.gen_king_moves(&board, to, opp_color),
-                };
-                if (att & (1 << pos)) != 0 {
-                    let (cr, cf) = self.gen_check_info(&board, to, pos);
-                    //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
-                    check_real |= cr;
-                    check_full |= cf;
+                //let (_, pt) = board.lookup(to);
+                match board.lookup(to) {
+                    Some ((_, pt)) => {
+                        let (_, att) = match pt {
+                            PieceType::Pawn => self.gen_pawn_moves(&board, to, opp_color), //en_pass??
+                            PieceType::Knight => self.gen_knight_moves(&board, to, opp_color),
+                            PieceType::Bishop => self.gen_bishop_moves(&board, to, board.pieces[opp_color]),
+                            PieceType::Rook => self.gen_rook_moves(&board, to, board.pieces[opp_color]),
+                            PieceType::Queen => self.gen_queen_moves(&board, to, board.pieces[opp_color]),
+                            PieceType::King => self.gen_king_moves(&board, to, opp_color),
+                        };
+                        if (att & (1 << pos)) != 0 {
+                            let (cr, cf) = self.gen_check_info(&board, to, pos);
+                            //TODO SET R AND F TO ONLY SAME RANK/FILE OF KING
+                            check_real |= cr;
+                            check_full |= cf;
+                        }
+                    },
+                    None => {}
                 }
+
             }
         }
 
@@ -374,60 +386,63 @@ impl Engine {
         kingless.kings[board.turn] = 0;
         kingless.recalc_board();
 
-        let (_, pt) = board.lookup(pos);
+        let mut check_real: u64 = 0; //any piece other than the king need to occupied
+        let mut check_full: u64 = 0; //king can not be on
 
-        let mut check_real: u64; //any piece other than the king need to occupied
-        let check_full: u64; //king can not be on
-
-        match pt {
-            PieceType::Pawn => {
-                //TODO ACCOUNT FOR ALL!!! PIECES IN THIS MATCH
-                check_real = 0; //self pos added on return //1 << pos;//self.gen_pawn_moves(&board, pos, !board.turn);
-                let (_, check_full_pre) = self.gen_pawn_moves(&board, pos, !board.turn);
-                check_full = check_full_pre
-                    & !(self.ray_attacks[Dir::North as usize][pos]
-                        | self.ray_attacks[Dir::South as usize][pos]);
-            }
-            PieceType::Knight => {
-                (_, check_real) = self.gen_knight_moves(&board, pos, !board.turn);
-                (_, check_full) = self.gen_knight_moves(&kingless, pos, !board.turn);
-            }
-            PieceType::Bishop => {
-                let raf = self.ray_attacks[Dir::NOEA as usize][king_pos]
-                    | self.ray_attacks[Dir::NOWE as usize][king_pos]
-                    | self.ray_attacks[Dir::SOEA as usize][king_pos]
-                    | self.ray_attacks[Dir::SOWE as usize][king_pos];
-                (_, check_real) = self.gen_bishop_moves(&board, pos, board.pieces[!board.turn]);
-                (_, check_full) = self.gen_bishop_moves(&kingless, pos, board.pieces[!board.turn]);
-                check_real = check_real & raf;
-            }
-            PieceType::Rook => {
-                let raf = self.ray_attacks[Dir::North as usize][king_pos]
-                    | self.ray_attacks[Dir::South as usize][king_pos]
-                    | self.ray_attacks[Dir::East as usize][king_pos]
-                    | self.ray_attacks[Dir::West as usize][king_pos];
-                (_, check_real) = self.gen_rook_moves(&board, pos, board.pieces[!board.turn]);
-                (_, check_full) = self.gen_rook_moves(&kingless, pos, board.pieces[!board.turn]);
-                check_real = check_real & raf;
-            }
-            PieceType::Queen => {
-                let raf = self.ray_attacks[Dir::North as usize][king_pos]
-                    | self.ray_attacks[Dir::South as usize][king_pos]
-                    | self.ray_attacks[Dir::East as usize][king_pos]
-                    | self.ray_attacks[Dir::West as usize][king_pos]
-                    | self.ray_attacks[Dir::NOEA as usize][king_pos]
-                    | self.ray_attacks[Dir::NOWE as usize][king_pos]
-                    | self.ray_attacks[Dir::SOEA as usize][king_pos]
-                    | self.ray_attacks[Dir::SOWE as usize][king_pos];
-                (_, check_real) = self.gen_queen_moves(&board, pos, board.pieces[!board.turn]);
-                (_, check_full) = self.gen_queen_moves(&kingless, pos, board.pieces[!board.turn]);
-                check_real = check_real & raf;
-            }
-            PieceType::King => {
-                //NOT NEEDED PROBABLE
-                (_, check_real) = self.gen_king_moves(&board, pos, !board.turn);
-                (_, check_full) = self.gen_king_moves(&kingless, pos, !board.turn);
-            }
+        match board.lookup(pos) {
+            Some ((_, pt)) => {
+                match pt {
+                    PieceType::Pawn => {
+                        //TODO ACCOUNT FOR ALL!!! PIECES IN THIS MATCH
+                        check_real = 0; //self pos added on return //1 << pos;//self.gen_pawn_moves(&board, pos, !board.turn);
+                        let (_, check_full_pre) = self.gen_pawn_moves(&board, pos, !board.turn);
+                        check_full = check_full_pre
+                            & !(self.ray_attacks[Dir::North as usize][pos]
+                            | self.ray_attacks[Dir::South as usize][pos]);
+                    }
+                    PieceType::Knight => {
+                        (_, check_real) = self.gen_knight_moves(&board, pos, !board.turn);
+                        (_, check_full) = self.gen_knight_moves(&kingless, pos, !board.turn);
+                    }
+                    PieceType::Bishop => {
+                        let raf = self.ray_attacks[Dir::NOEA as usize][king_pos]
+                            | self.ray_attacks[Dir::NOWE as usize][king_pos]
+                            | self.ray_attacks[Dir::SOEA as usize][king_pos]
+                            | self.ray_attacks[Dir::SOWE as usize][king_pos];
+                        (_, check_real) = self.gen_bishop_moves(&board, pos, board.pieces[!board.turn]);
+                        (_, check_full) = self.gen_bishop_moves(&kingless, pos, board.pieces[!board.turn]);
+                        check_real = check_real & raf;
+                    }
+                    PieceType::Rook => {
+                        let raf = self.ray_attacks[Dir::North as usize][king_pos]
+                            | self.ray_attacks[Dir::South as usize][king_pos]
+                            | self.ray_attacks[Dir::East as usize][king_pos]
+                            | self.ray_attacks[Dir::West as usize][king_pos];
+                        (_, check_real) = self.gen_rook_moves(&board, pos, board.pieces[!board.turn]);
+                        (_, check_full) = self.gen_rook_moves(&kingless, pos, board.pieces[!board.turn]);
+                        check_real = check_real & raf;
+                    }
+                    PieceType::Queen => {
+                        let raf = self.ray_attacks[Dir::North as usize][king_pos]
+                            | self.ray_attacks[Dir::South as usize][king_pos]
+                            | self.ray_attacks[Dir::East as usize][king_pos]
+                            | self.ray_attacks[Dir::West as usize][king_pos]
+                            | self.ray_attacks[Dir::NOEA as usize][king_pos]
+                            | self.ray_attacks[Dir::NOWE as usize][king_pos]
+                            | self.ray_attacks[Dir::SOEA as usize][king_pos]
+                            | self.ray_attacks[Dir::SOWE as usize][king_pos];
+                        (_, check_real) = self.gen_queen_moves(&board, pos, board.pieces[!board.turn]);
+                        (_, check_full) = self.gen_queen_moves(&kingless, pos, board.pieces[!board.turn]);
+                        check_real = check_real & raf;
+                    }
+                    PieceType::King => {
+                        //NOT NEEDED PROBABLE
+                        (_, check_real) = self.gen_king_moves(&board, pos, !board.turn);
+                        (_, check_full) = self.gen_king_moves(&kingless, pos, !board.turn);
+                    }
+                }
+            },
+            None => {}
         }
 
         (check_real | (1 << pos), check_full)
