@@ -1,6 +1,7 @@
 use super::bitboard::*;
 use super::board::*;
 use super::utils::*;
+use super::tables::ZobristKeys;
 
 //          (from,  to,    new board)
 //pub type Move = (usize, usize, Board, Option<PieceType>);
@@ -31,6 +32,8 @@ pub struct Engine {
     pawn_attacks: Vec<Vec<u64>>,
     king_attacks: Vec<u64>,
     knight_attacks: Vec<u64>,
+
+    pub zobrist_keys: ZobristKeys,
 }
 
 impl Engine {
@@ -40,6 +43,8 @@ impl Engine {
             pawn_attacks: gen_pawn_attacks(),
             king_attacks: gen_king_attacks(),
             knight_attacks: gen_knight_attacks(),
+
+            zobrist_keys: ZobristKeys::new(),
         }
     }
     //from, to, new board
@@ -71,7 +76,7 @@ impl Engine {
             if moves & 0xff00000000000000 != 0 || moves & 0xff != 0 {
                 let prmo_moves = board_serialize(moves);
                 for to in prmo_moves {
-                    all_moves.append(&mut (board.promote(from, to))); //64 out of range, no piece
+                    all_moves.append(&mut (board.promote(from, to, &self.zobrist_keys))); //64 out of range, no piece
                 }
             } else {
                 possible.push((from, moves));
@@ -88,7 +93,7 @@ impl Engine {
                     let to = moves_to[i];
 
                     if (1 << to) & board.check_full == 0 {
-                        let mut new_move = board.move_piece(to, from);
+                        let mut new_move = board.move_piece(to, from, &self.zobrist_keys);
                         new_move.board.check_real = 0;
                         new_move.board.check_full = 0;
                         all_moves.push(new_move);
@@ -118,13 +123,13 @@ impl Engine {
                         && self.can_castle_through(0xc, &board)
                     {
                         //queenside
-                        all_moves.push(board.castle(88));
+                        all_moves.push(board.castle(88, &self.zobrist_keys));
                     }
                     if board.castling & 0b0100 == 0b0100
                         && (board.occupied & 0x60 == 0)
                         && self.can_castle_through(0x60, &board)
                     {
-                        all_moves.push(board.castle(80));
+                        all_moves.push(board.castle(80, &self.zobrist_keys));
                     }
                 }
                 PieceColor::Black => {
@@ -133,14 +138,14 @@ impl Engine {
                         && self.can_castle_through(0xc00000000000000, &board)
                     {
                         //queenside
-                        all_moves.push(board.castle(88));
+                        all_moves.push(board.castle(88, &self.zobrist_keys));
                     }
                     if board.castling & 0b0001 == 0b0001
                         && (board.occupied & 0x6000000000000000 == 0)
                         && self.can_castle_through(0x6000000000000000, &board)
                     {
                         //kingside
-                        all_moves.push(board.castle(80));
+                        all_moves.push(board.castle(80, &self.zobrist_keys));
                     }
                 }
             }
@@ -158,7 +163,7 @@ impl Engine {
 
                 if not_check || board.check_real & (1 << to) != 0 {
                     //Not in check or to is in (check)
-                    all_moves.push(board.move_piece(to, from));
+                    all_moves.push(board.move_piece(to, from, &self.zobrist_keys));
                 }
             }
         }

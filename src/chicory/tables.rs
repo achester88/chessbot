@@ -21,18 +21,18 @@ struct Entry {
 
 #[derive(Debug)]
 pub struct ZobristKeys {
-   pawns: [[u64; 64]; 2],
-   bishops: [[u64; 64]; 2],
-   knights: [[u64; 64]; 2],
-   rooks: [[u64; 64]; 2],
-   queens: [[u64; 64]; 2],
-   kings: [[u64; 64]; 2],
+   pub pawns: [[u64; 64]; 2],
+   pub bishops: [[u64; 64]; 2],
+   pub knights: [[u64; 64]; 2],
+   pub rooks: [[u64; 64]; 2],
+   pub queens: [[u64; 64]; 2],
+   pub kings: [[u64; 64]; 2],
 
-   white_castling_rights: [u64; 4],
-   black_castling_rights: [u64; 4],
-   en_passant: [u64; 64],
+   pub white_castling_rights: [u64; 4],
+   pub black_castling_rights: [u64; 4],
+   pub en_passant: [u64; 64],
 
-   black_turn: u64
+   pub black_turn: u64
 }
 
 impl ZobristKeys {
@@ -70,7 +70,7 @@ impl ZobristKeys {
         }
     }
 
-    pub fn get_key(self, board: Board) -> u64 {
+    pub fn get_key(&self, board: Board) -> u64 {
         let mut zorb: u64 = 0;
 
         xor_board(&mut zorb, board.pawns, self.pawns);
