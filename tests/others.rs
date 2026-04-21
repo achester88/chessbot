@@ -3,39 +3,37 @@ use chicory::chicory::engine::{Engine, Move};
 use chicory::chicory::tables::ZobristKeys;
 
 #[test]
-fn hash() {
+fn hash_move_unmove() {
     let eng = Engine::new();
-    let board = Board::new("8/8/8/8/8/3p4/2P5/8 w - - 0 1", &eng);
-    let nbord = Board::new("8/8/8/8/8/2Pp4/8/8 b - - 0 1", &eng);
+    let board = Board::new("8/8/8/3Rr3/8/8/8/8 w - - 0 1", &eng);
 
-    //let zb = ZobristKeys::new();
-    let ph = board.zobrist_hash;
+    println!("======= INIT =======");
+    board.print_board();
+    println!("=====================");
 
-    println!("PH: {:?}", ph);
+    let init_hash = board.zobrist_hash;
 
-    let moves = eng.gen_moves(board);
+    let step_1_moves = eng.gen_moves(board);
+    let step_1 = step_1_moves[8];
 
-    //println!("Moves List: {:?}", moves);
+    let step_2_moves = eng.gen_moves(step_1.board);
+    let step_2 = step_2_moves[0];
 
-    println!("MH: {:?}", moves[0].board.zobrist_hash);
+    let step_3_moves = eng.gen_moves(step_2.board);
+    let step_3 = step_3_moves[4];
 
-    let mut nh = ph;
-
-    nh ^= eng.zobrist_keys.pawns[PieceColor::White][10];
-    nh ^= eng.zobrist_keys.pawns[PieceColor::White][18];
-    nh ^= eng.zobrist_keys.black_turn;
-
-    println!("NH: {:?}", nh);
-
-    let ch = nbord.zobrist_hash;
-
-    println!("CH: {:?}", ch);
-
-    println!("\n\n\n\n");
-
-    //println!("key: {:?}", zb.get_key(board));
+    let step_4_moves = eng.gen_moves(step_3.board);
+    let step_4 = step_4_moves[10];
 
 
+    println!("\n======= FINAL =======");
+    step_4.board.print_board();
+    println!("=====================");
 
-    assert_eq!(0, 1);
+    let final_hash = step_4.board.zobrist_hash;
+
+    println!("init  hash: {:?}", init_hash);
+    println!("final hash: {:?}", final_hash);
+
+    assert_eq!(init_hash, final_hash);
 }

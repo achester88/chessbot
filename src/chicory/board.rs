@@ -268,6 +268,10 @@ impl Board {
 
         let (pc, pt) = self.lookup(from).unwrap(); //To piece should always be there
 
+        //Remove Current Castling State From Hash
+        new_board.zobrist_hash ^= zobrist_keys.white_castling_rights[((new_board.castling & 0b1100) >> 2) as usize];
+        new_board.zobrist_hash ^= zobrist_keys.black_castling_rights[(new_board.castling & 0b0011) as usize];  //Black
+
         //Check if en_passant needs updating
         new_board.en_passant_check(to, from, &pt, zobrist_keys);
 
@@ -283,7 +287,6 @@ impl Board {
                         values = 0b1100_1100;
                     }
                 };
-
                 new_board.castling &= values;
             } else {
                 //if rook cancel side its on
@@ -325,6 +328,10 @@ impl Board {
 
         new_board.next_turn(zobrist_keys);
 
+        //Add Current Castling State Back to Hash
+        new_board.zobrist_hash ^= zobrist_keys.white_castling_rights[((new_board.castling & 0b1100) >> 2) as usize];
+        new_board.zobrist_hash ^= zobrist_keys.black_castling_rights[(new_board.castling & 0b0011) as usize];  //Black
+
         //new_board
         Move{from, to, board: new_board, promote_to: None, capture}
     }
@@ -336,12 +343,13 @@ impl Board {
                 //remove pawn at en_pass
                 match self.turn {
                     PieceColor::White => {
-                        self.pawns[PieceColor::Black] =
-                            self.pawns[PieceColor::Black] & !(1 << self.en_passant - 8)
+                        self.pawns[PieceColor::Black] = self.pawns[PieceColor::Black] & !(1 << self.en_passant - 8);
+                        self.zobrist_hash ^= zobrist_keys.pawns[PieceColor::Black][(self.en_passant - 8) as usize];
+
                     }
                     PieceColor::Black => {
-                        self.pawns[PieceColor::White] =
-                            self.pawns[PieceColor::White] & !(1 << self.en_passant + 8)
+                        self.pawns[PieceColor::White] = self.pawns[PieceColor::White] & !(1 << self.en_passant + 8);
+                        self.zobrist_hash ^= zobrist_keys.pawns[PieceColor::White][(self.en_passant + 8) as usize];
                     }
                 };
             }
@@ -465,6 +473,9 @@ impl Board {
     pub fn promote(&self, from: usize, to: usize, zobrist_keys: &ZobristKeys) -> Vec<Move> {
         let mut new_board = self.clone();
 
+        new_board.zobrist_hash ^= zobrist_keys.white_castling_rights[((new_board.castling & 0b1100) >> 2) as usize];
+        new_board.zobrist_hash ^= zobrist_keys.black_castling_rights[(new_board.castling & 0b0011) as usize];  //Black
+
         let (pc, _) = new_board.lookup(from).unwrap();
         //let (old_pc, old_pt) = new_board.lookup(to);
 
@@ -478,6 +489,9 @@ impl Board {
             None =>  false
         };
 
+        new_board.zobrist_hash ^= zobrist_keys.white_castling_rights[((new_board.castling & 0b1100) >> 2) as usize];
+        new_board.zobrist_hash ^= zobrist_keys.black_castling_rights[(new_board.castling & 0b0011) as usize];  //Black
+
         //new_board.remove_castling(to, old_pt);
 
         new_board.next_turn(zobrist_keys);
@@ -485,19 +499,34 @@ impl Board {
         //new_board.remove_piece(to, &old_pt, old_pc);
         new_board.remove_piece(from, &PieceType::Pawn, pc, zobrist_keys);
 
+        if new_board.en_passant != 65 {
+            new_board.zobrist_hash ^= zobrist_keys.en_passant[self.en_passant as usize];
+            new_board.en_passant = 65;
+        }
+        //new_board.zobrist_hash ^= zobrist_keys.en_passant[self.en_passant as usize];
+
         let mut new_boards = vec![new_board.clone(); 4];
 
         new_boards[0].knights[pc] = new_board.knights[pc] | (1 << to);
+        new_boards[0].zobrist_hash ^= zobrist_keys.knights[pc][to];
+
         new_boards[1].bishops[pc] = new_board.bishops[pc] | (1 << to);
+        new_boards[1].zobrist_hash ^= zobrist_keys.bishops[pc][to];
+
         new_boards[2].rooks[pc] = new_board.rooks[pc] | (1 << to);
+        new_boards[2].zobrist_hash ^= zobrist_keys.rooks[pc][to];
+
         new_boards[3].queens[pc] = new_board.queens[pc] | (1 << to);
+        new_boards[3].zobrist_hash ^= zobrist_keys.queens[pc][to];
 
         //Check for check
         let mut out: Vec<Move> = vec![];
         //In case other piece is removed all case need to be run
         for i in 0..4 {
             new_boards[i].recalc_board();
-            new_boards[i].en_passant = 65;
+
+            //new_boards[i].en_passant = 65;
+
         }
 
         out.push(Move{from, to, board: new_boards[0], promote_to: Some(PieceType::Knight), capture});
@@ -547,6 +576,9 @@ impl Board {
         let king_to_pos: usize;
         let rook_to_pos: usize;
 
+        new_board.zobrist_hash ^= zobrist_keys.white_castling_rights[((new_board.castling & 0b1100) >> 2) as usize];
+        new_board.zobrist_hash ^= zobrist_keys.black_castling_rights[(new_board.castling & 0b0011) as usize];  //Black
+
         match new_board.turn {
             PieceColor::White => {
                 king_from_pos = 4;
@@ -582,7 +614,10 @@ impl Board {
             }
         }
 
-        new_board.en_passant = 65;
+        if new_board.en_passant != 65 {
+            new_board.zobrist_hash ^= zobrist_keys.en_passant[self.en_passant as usize];
+            new_board.en_passant = 65;
+        }
 
         new_board.remove_piece(king_from_pos, &PieceType::King, new_board.turn, zobrist_keys);
         new_board.remove_piece(rook_from_pos, &PieceType::Rook, new_board.turn, zobrist_keys);
@@ -593,6 +628,9 @@ impl Board {
         new_board.recalc_board();
 
         new_board.next_turn(zobrist_keys);
+
+        new_board.zobrist_hash ^= zobrist_keys.white_castling_rights[((new_board.castling & 0b1100) >> 2) as usize];
+        new_board.zobrist_hash ^= zobrist_keys.black_castling_rights[(new_board.castling & 0b0011) as usize];  //Black
 
         //new_board
         Move{from: code as usize, to: code as usize, board: new_board, promote_to: None, capture: false}

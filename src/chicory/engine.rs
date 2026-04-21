@@ -299,7 +299,7 @@ impl Engine {
                 | (self.pawn_attacks[PieceColor::Black as usize][sq]
                     & (board.pieces[PieceColor::White as usize] | en_pass));
         }
-
+        
         //
         (sq, moves)
     }

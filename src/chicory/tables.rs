@@ -80,8 +80,8 @@ impl ZobristKeys {
         xor_board(&mut zorb, board.queens, self.queens);
         xor_board(&mut zorb, board.kings, self.kings);
 
-        zorb ^= self.white_castling_rights[((board.castling & 0b1100) >> 2) as usize];
-        zorb ^= self.black_castling_rights[(board.castling & 0b0011) as usize];
+        zorb ^= self.white_castling_rights[((board.castling & 0b1100) >> 2) as usize]; //White
+        zorb ^= self.black_castling_rights[(board.castling & 0b0011) as usize];  //Black
 
         if board.en_passant != 65 {
             zorb ^=  self.en_passant[board.en_passant as usize];
