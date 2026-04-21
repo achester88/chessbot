@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::chicory::bitboard::board_serialize;
 use crate::chicory::board::{Board, PieceColor};
 use crate::chicory::engine::{Engine, Move};
@@ -67,11 +68,25 @@ pub fn minmax(
     stop_calculation: &AtomicBool,
     time_per_move: u128,
     move_timer: Instant,
+    mut positions_reached: HashMap<u64, usize>,
     eval_first: Option<Move>,
     top: bool,
     capture: bool
 ) -> (i32, Option<Move>, usize) {
     let test_start = Instant::now();
+
+    match positions_reached.get(&board.zobrist_hash) {
+        Some(x) => {
+            if x >= &3 {
+                return (0, None, 1);
+            } else {
+                positions_reached.insert(board.zobrist_hash, x + 1);
+            }
+        },
+        None => {
+            positions_reached.insert(board.zobrist_hash, 1);
+        }
+    }
 
     if depth == 0 {
         return if capture || board.check_real != 0 {
@@ -109,6 +124,7 @@ pub fn minmax(
     }
 
     for m in moves {
+
         let (score, _, nodes) = minmax(
             &eng,
             m.board,
@@ -120,6 +136,7 @@ pub fn minmax(
             stop_calculation,
             time_per_move,
             move_timer,
+            positions_reached.clone(),
             None,
             false,
             m.capture

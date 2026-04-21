@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::chicory::board::{Board, PieceColor};
 use crate::chicory::engine::Engine;
 use std::sync::Arc;
@@ -28,6 +29,8 @@ pub struct UciInterface {
     //current_move: usize,
     pub max_search_depth: usize,
     engine: Arc<Engine>,
+
+    pub positions_reached: Arc<Mutex<HashMap<u64, usize>>>
 }
 impl UciInterface {
     pub fn new(engine: Arc<Engine>) -> Self {
@@ -35,6 +38,8 @@ impl UciInterface {
             current_board: Arc::new(Mutex::new(None)),
             max_search_depth: 12,
             engine: engine,
+
+            positions_reached: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 

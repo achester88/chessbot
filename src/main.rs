@@ -47,11 +47,13 @@ fn main() {
                     let finished_calculation_clone = Arc::clone(&finished_calculation);
                     let eng = engine.clone();
                     let board_ref = interface.current_board.clone();
+                    let positions_reached_ref = interface.positions_reached.clone();
 
                     thread::spawn(move || {
                         let move_timer = Instant::now();
                         let board = { board_ref.lock().unwrap().clone() };
                         let cal_board = board.unwrap();
+                        let mut positions_reached = positions_reached_ref.lock().unwrap();
 
                         println!("{:?}", cal_board);
 
@@ -107,6 +109,7 @@ fn main() {
                                 &stop_calculation_clone,
                                 time_per_move,
                                 move_timer,
+                                positions_reached.clone(),
                                 None,
                                 true,
                                 false
@@ -128,6 +131,17 @@ fn main() {
                         //let (_, _, board, _) = cur_best_move.unwrap(); //*best_move_lock;
                         println!("bestmove {}", Board::move_to_lan(&cur_best_move.unwrap()));
                         *board_ref.lock().unwrap() = Some(cur_best_move.unwrap().board);
+
+                        let zh = cur_best_move.unwrap().board.zobrist_hash;
+
+                        if positions_reached.contains_key(&zh) {
+                            let current_count = *positions_reached.get(&zh).unwrap();
+                            positions_reached.insert(zh, current_count + 1);
+                        } else {
+                            positions_reached.insert(zh, 1);
+                        }
+
+                        println!("info string HM: {:?}", positions_reached);
 
                         stop_calculation_clone.store(false, Ordering::Relaxed);
                     });
