@@ -77,9 +77,7 @@ pub fn minmax(
 
     match positions_reached.get(&board.zobrist_hash) {
         Some(x) => {
-            //println!("info string HIT AGIN x: {:?}", x);
-            if x >= &3 {
-                //println!("GAME OVER: {:?}", board);
+            if x >= &2 {
                 return (0, None, 1, vec![]);
             } else {
                 positions_reached.insert(board.zobrist_hash, x + 1);
@@ -191,7 +189,7 @@ pub fn minmax(
             "info depth {} nodes {} score cp {} time {} pv{}",
             depth,
             node_count,
-            best,
+            if board.turn == PieceColor::White {best} else {-best},
             test_start.elapsed().as_millis(),
             pv_str//Board::move_to_lan(&best_move)
         );

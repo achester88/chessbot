@@ -55,7 +55,7 @@ fn main() {
                         let cal_board = board.unwrap();
                         let mut positions_reached = positions_reached_ref.lock().unwrap();
 
-                        println!("{:?}", cal_board);
+                        //println!("{:?}", cal_board);
 
                         let mut time_per_move = 0;
 
@@ -146,8 +146,8 @@ fn main() {
                         stop_calculation_clone.store(false, Ordering::Relaxed);
                     });
                 }
-                Cmd::Set(board) => {
-                    println!("info score cp {}", eval(&board));
+                Cmd::Set(board) => { //
+                    println!("info score cp {}", if board.turn == PieceColor::White {eval(&board)} else {-eval(&board)});
                 }
 
                 Cmd::Stop => {
@@ -177,7 +177,7 @@ fn main() {
                             (count as f64 / stop_time as f64) * 1000.0
                         );
                     });
-                }
+                },
             }
         }
     }
