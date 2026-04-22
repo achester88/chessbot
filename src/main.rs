@@ -98,7 +98,7 @@ fn main() {
                         while !&stop_calculation_clone.load(Ordering::Relaxed)
                             && (depth <= stop_depth || time_per_move == 0)
                         {
-                            let (_, best_move, _) = minmax(
+                            let (_, best_move, _, _) = minmax(
                                 &eng,
                                 cal_board,
                                 depth,
@@ -110,7 +110,7 @@ fn main() {
                                 time_per_move,
                                 move_timer,
                                 positions_reached.clone(),
-                                None,
+                                cur_best_move,
                                 true,
                                 false
                             );
@@ -141,7 +141,7 @@ fn main() {
                             positions_reached.insert(zh, 1);
                         }
 
-                        println!("info string HM: {:?}", positions_reached);
+                        //println!("info string HM: {:?}", positions_reached);
 
                         stop_calculation_clone.store(false, Ordering::Relaxed);
                     });

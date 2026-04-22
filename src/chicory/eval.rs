@@ -72,13 +72,15 @@ pub fn minmax(
     eval_first: Option<Move>,
     top: bool,
     capture: bool
-) -> (i32, Option<Move>, usize) {
+) -> (i32, Option<Move>, usize, Vec<Move>) {
     let test_start = Instant::now();
 
     match positions_reached.get(&board.zobrist_hash) {
         Some(x) => {
+            //println!("info string HIT AGIN x: {:?}", x);
             if x >= &3 {
-                return (0, None, 1);
+                //println!("GAME OVER: {:?}", board);
+                return (0, None, 1, vec![]);
             } else {
                 positions_reached.insert(board.zobrist_hash, x + 1);
             }
@@ -89,10 +91,10 @@ pub fn minmax(
     }
 
     if depth == 0 {
-        return if capture || board.check_real != 0 {
+        return if capture {// || board.check_real != 0 {
             stopping_search(&eng, board, alpha, beta, turn, par_moves, stop_calculation, time_per_move, move_timer, true, 0) //(eval(&board), None, 1);
         } else {
-            (eval(&board), None, 1)
+            (eval(&board), None, 1, vec![])
         }
     }
 
@@ -105,15 +107,17 @@ pub fn minmax(
 
     if moves.len() == 0 {
         if board.check_real == 0 { //Stalemate
-            return (0, None, 1);
+            return (0, None, 1, vec![]);
         }
         return match turn {
-            PieceColor::White => (i32::MIN, None, 1),
-            PieceColor::Black => (i32::MAX, None, 1),
+            PieceColor::White => (i32::MIN, None, 1, vec![]),
+            PieceColor::Black => (i32::MAX, None, 1, vec![]),
         };
     }
 
     let mut best_move = moves[0];
+
+    let mut best_pv: Vec<Move> = vec![];
 
     let total_nodes = par_moves * moves.len();
 
@@ -123,9 +127,11 @@ pub fn minmax(
         moves.insert(0, eval_first.unwrap());
     }
 
+    let mut early_stop = false;
+
     for m in moves {
 
-        let (score, _, nodes) = minmax(
+        let (score, _, nodes, pv) = minmax(
             &eng,
             m.board,
             depth - 1,
@@ -148,6 +154,7 @@ pub fn minmax(
                 if score > best {
                     best = score;
                     best_move = m;
+                    best_pv = pv
                 }
                 alpha = alpha.max(score);
             }
@@ -155,6 +162,7 @@ pub fn minmax(
                 if score < best {
                     best = score;
                     best_move = m;
+                    best_pv = pv;
                 }
                 beta = beta.min(score);
             }
@@ -163,21 +171,33 @@ pub fn minmax(
         if beta <= alpha || stop_calculation.load(Ordering::Relaxed) || ((depth > 4 || top) && (time_per_move != 0 && move_timer.elapsed().as_millis() > time_per_move))
         {
             break;
+            early_stop = true;
         }
     }
 
-    if top {
+    
+    best_pv.insert(0, best_move);
+
+    if top && !early_stop {
+
+        let mut pv_str = String::from("");
+
+        for m in &mut *best_pv {
+            pv_str.push_str(" ");
+            pv_str.push_str(&Board::move_to_lan(&m));
+        }
+
         println!(
-            "info depth {} nodes {} score cp {} time {} pv {}",
+            "info depth {} nodes {} score cp {} time {} pv{}",
             depth,
             node_count,
             best,
             test_start.elapsed().as_millis(),
-            Board::move_to_lan(&best_move)
+            pv_str//Board::move_to_lan(&best_move)
         );
     }
-
-    (best, Some(best_move), node_count)
+   
+    (best, Some(best_move), node_count, best_pv)
 }
 
 pub fn stopping_search(
@@ -192,7 +212,7 @@ pub fn stopping_search(
     move_timer: Instant,
     top: bool,
     depth: usize,
-) -> (i32, Option<Move>, usize) {
+) -> (i32, Option<Move>, usize, Vec<Move>) {
 
     let score = eval(&board);
 
@@ -201,7 +221,7 @@ pub fn stopping_search(
         PieceColor::White => {
 
             if score >= beta {
-                return (beta, None, 1);
+                return (beta, None, 1, vec![]);
             }
 
             alpha = alpha.max(score);
@@ -210,7 +230,7 @@ pub fn stopping_search(
         PieceColor::Black => {
 
             if score <= alpha {
-                return (alpha, None, 1);
+                return (alpha, None, 1, vec![]);
             }
 
             beta = beta.min(score);
@@ -222,22 +242,22 @@ pub fn stopping_search(
     if moves.is_empty() {
 
         if board.check_real == 0 {
-            return (0, None, 1);
+            return (0, None, 1, vec![]);
         }
 
         return match turn {
-            PieceColor::White => (i32::MIN, None, 1),
-            PieceColor::Black => (i32::MAX, None, 1),
+            PieceColor::White => (i32::MIN, None, 1, vec![]),
+            PieceColor::Black => (i32::MAX, None, 1, vec![]),
         };
     }
 
     if moves.len() == 0 {
         if board.check_real == 0 { //Stalemate
-            return (0, None, 1);
+            return (0, None, 1, vec![]);
         }
         return match turn {
-            PieceColor::White => (i32::MIN, None, 1),
-            PieceColor::Black => (i32::MAX, None, 1),
+            PieceColor::White => (i32::MIN, None, 1, vec![]),
+            PieceColor::Black => (i32::MAX, None, 1, vec![]),
         };
     }
 
@@ -249,7 +269,7 @@ pub fn stopping_search(
 
     for m in moves {
         if m.capture { //|| m.board.check_real != 0
-            let (score, _, nodes) = stopping_search(
+            let (score, _, nodes, pv) = stopping_search(
                 &eng,
                 m.board,
                 alpha,
@@ -268,13 +288,13 @@ pub fn stopping_search(
             match turn {
                 PieceColor::White => {
                     if score >= beta {
-                        return (beta, None, 0);
+                        return (beta, None, 0, vec![]);
                     }
                     alpha = alpha.max(score);
                 },
                 PieceColor::Black => {
                     if score <= alpha {
-                        return (alpha, None, 0);
+                        return (alpha, None, 0, vec![]);
                     }
                     beta = beta.min(score);
                 }
@@ -291,8 +311,8 @@ pub fn stopping_search(
     }
 
     match turn {
-        PieceColor::White => (alpha, None, node_count + 1),
-        PieceColor::Black => (beta, None, node_count + 1),
+        PieceColor::White => (alpha, None, node_count + 1, vec![]),
+        PieceColor::Black => (beta, None, node_count + 1, vec![]),
     }
     //(best_score, None, 0)
 }
