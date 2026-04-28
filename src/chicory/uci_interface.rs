@@ -36,7 +36,7 @@ impl UciInterface {
     pub fn new(engine: Arc<Engine>) -> Self {
         UciInterface {
             current_board: Arc::new(Mutex::new(None)),
-            max_search_depth: 100,
+            max_search_depth: 99,
             engine: engine,
 
             positions_reached: Arc::new(Mutex::new(HashMap::new())),
