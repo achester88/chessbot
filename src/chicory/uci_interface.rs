@@ -68,10 +68,7 @@ impl UciInterface {
         let mut i = 1;
 
         let mut cur_board = self.current_board.lock().unwrap().clone();
-
-        let new_game = cur_board.is_none();
-
-        if new_game {
+        
             if command[i] == "startpos" {
                 cur_board = Some(Board::new(
                     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -80,6 +77,7 @@ impl UciInterface {
 
                 i += 1;
             } else {
+                i += 1;
                 let mut fen_tokens = vec![];
 
                 //collect all of fen string
@@ -107,32 +105,6 @@ impl UciInterface {
                     i += 1;
                 }
             }
-        } else {
-            cur_board = Some(Board::new(
-                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-                &self.engine,
-            ));
-
-            if command[i] == "startpos" {
-                i += 1;
-
-                if i < command.len() && command[i] == "moves" {
-                    i += 1;
-                    //let mut all_moves = vec![];
-                    while i < command.len() {
-                        //all_moves.push(&command[i]);
-                        cur_board = Some(
-                            cur_board
-                                .unwrap()
-                                .make_move(&command[i], &self.engine),
-                        );
-                        i += 1;
-
-                    }
-
-                }
-            }
-        }
 
         *self.current_board.lock().unwrap() = cur_board;
 
