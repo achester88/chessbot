@@ -96,7 +96,7 @@ fn main() {
 
                         let mut depth = 1;
                         while !&stop_calculation_clone.load(Ordering::Relaxed)
-                            && (depth <= stop_depth || time_per_move == 0)
+                            && (stop_depth == 0 || depth <= stop_depth || time_per_move == 0)
                         {
                             let (_, best_move, _, _) = minmax(
                                 &eng,

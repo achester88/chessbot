@@ -36,7 +36,7 @@ impl UciInterface {
     pub fn new(engine: Arc<Engine>) -> Self {
         UciInterface {
             current_board: Arc::new(Mutex::new(None)),
-            max_search_depth: 12,
+            max_search_depth: 100,
             engine: engine,
 
             positions_reached: Arc::new(Mutex::new(HashMap::new())),
@@ -68,7 +68,7 @@ impl UciInterface {
         let mut i = 1;
 
         let mut cur_board = self.current_board.lock().unwrap().clone();
-        
+
             if command[i] == "startpos" {
                 cur_board = Some(Board::new(
                     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
