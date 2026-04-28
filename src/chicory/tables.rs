@@ -4,19 +4,19 @@ use std::hash::{BuildHasher, Hasher};
 use super::engine::Move;
 use super::board::{Board, PieceColor};
 
-enum Flag {
+pub enum Flag {
     EXACT,
     ALPHA,
     BETA,
 }
 
-struct Entry {
-    zobrist_hash: u64,
-    depth: usize,
-    flag: Flag,
-    eval: i32,
-    ancient: bool,
-    move_info: Move,
+pub struct Entry {
+    pub zobrist_hash: u64,
+    pub depth: usize,
+    pub flag: Flag,
+    pub eval: i32,
+    pub ancient: bool,
+    pub move_info: Move,
 }
 
 #[derive(Debug)]

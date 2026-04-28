@@ -48,12 +48,16 @@ fn main() {
                     let eng = engine.clone();
                     let board_ref = interface.current_board.clone();
                     let positions_reached_ref = interface.positions_reached.clone();
+                    let transposition_table_ref = interface.transposition_table.clone();
+
+                    println!("SPAWN");
 
                     thread::spawn(move || {
                         let move_timer = Instant::now();
                         let board = { board_ref.lock().unwrap().clone() };
                         let cal_board = board.unwrap();
                         let mut positions_reached = positions_reached_ref.lock().unwrap();
+                        let mut transposition_table = transposition_table_ref.lock().unwrap();
 
                         //println!("{:?}", cal_board);
 
@@ -94,6 +98,8 @@ fn main() {
                             stop_depth = interface.max_search_depth
                         }
 
+                        println!("FFFF");
+
                         let mut depth = 1;
                         while !&stop_calculation_clone.load(Ordering::Relaxed)
                             && (stop_depth == 0 || depth <= stop_depth || time_per_move == 0)
@@ -109,7 +115,8 @@ fn main() {
                                 &stop_calculation_clone,
                                 time_per_move,
                                 move_timer,
-                                positions_reached.clone(),
+                                &mut positions_reached,
+                                &mut transposition_table,
                                 cur_best_move,
                                 true,
                                 false
@@ -141,7 +148,7 @@ fn main() {
                             positions_reached.insert(zh, 1);
                         }
 
-                        //println!("info string HM: {:?}", positions_reached);
+                        println!("info string HM: {:?}", positions_reached);
 
                         stop_calculation_clone.store(false, Ordering::Relaxed);
                     });

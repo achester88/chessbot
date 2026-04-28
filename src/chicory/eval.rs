@@ -2,7 +2,10 @@ use std::collections::HashMap;
 use crate::chicory::bitboard::board_serialize;
 use crate::chicory::board::{Board, PieceColor};
 use crate::chicory::engine::{Engine, Move};
+use crate::chicory::tables::{Entry, Flag};
+
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::MutexGuard;
 use std::time::Instant;
 
 const BLACK_PAWN_PS_TABLE: [i32; 64] = [
@@ -68,31 +71,53 @@ pub fn minmax(
     stop_calculation: &AtomicBool,
     time_per_move: u128,
     move_timer: Instant,
-    mut positions_reached: HashMap<u64, usize>,
+    positions_reached:  &mut MutexGuard<HashMap<u64, usize>>,
+    transposition_table: &mut MutexGuard<HashMap<u64, Entry>>,
     eval_first: Option<Move>,
     top: bool,
     capture: bool
 ) -> (i32, Option<Move>, usize, Vec<Move>) {
     let test_start = Instant::now();
 
+    let init_pos_count: usize;
+
     match positions_reached.get(&board.zobrist_hash) {
         Some(x) => {
+
             if x >= &2 {
+                //println!("depth: {}", depth);
                 return (0, None, 1, vec![]);
+                init_pos_count = x.clone();
             } else {
-                positions_reached.insert(board.zobrist_hash, x + 1);
+                init_pos_count = x.clone();
+                positions_reached.insert(board.zobrist_hash, init_pos_count + 1);
+
             }
         },
         None => {
             positions_reached.insert(board.zobrist_hash, 1);
+            init_pos_count = 0;
         }
     }
 
     if depth == 0 {
-        return if capture {// || board.check_real != 0 {
-            stopping_search(&eng, board, alpha, beta, turn, par_moves, stop_calculation, time_per_move, move_timer, true, 0) //(eval(&board), None, 1);
+        if capture {// || board.check_real != 0 {
+            if init_pos_count == 0 {
+                positions_reached.remove(&board.zobrist_hash);
+            } else {
+                positions_reached.insert(board.zobrist_hash, init_pos_count);
+            }
+
+            return stopping_search(&eng, board, alpha, beta, turn, par_moves, stop_calculation, time_per_move, move_timer, true, 0) //(eval(&board), None, 1);
         } else {
-            (eval(&board), None, 1, vec![])
+
+            if init_pos_count == 0 {
+                positions_reached.remove(&board.zobrist_hash);
+            } else {
+                positions_reached.insert(board.zobrist_hash, init_pos_count);
+            }
+
+            return (eval(&board), None, 1, vec![])
         }
     }
 
@@ -101,12 +126,35 @@ pub fn minmax(
         PieceColor::Black => i32::MAX,
     };
 
+    if transposition_table.contains_key(&board.zobrist_hash) {
+        let entry = transposition_table.get(&board.zobrist_hash).unwrap();
+        if(entry.depth >= depth) {
+            //TODO CHECK IF TURN "WORKS"
+            if init_pos_count == 0 {
+                positions_reached.remove(&board.zobrist_hash);
+            } else {
+                positions_reached.insert(board.zobrist_hash, init_pos_count);
+            }
+
+            return (entry.eval, Some(entry.move_info), 1, vec![]);
+        }
+    }
+
+
     let mut moves = order_moves(eng.gen_moves(board));
 
     if moves.len() == 0 {
+
+        if init_pos_count == 0 {
+            positions_reached.remove(&board.zobrist_hash);
+        } else {
+            positions_reached.insert(board.zobrist_hash, init_pos_count);
+        }
+
         if board.check_real == 0 { //Stalemate
             return (0, None, 1, vec![]);
         }
+
         return match turn {
             PieceColor::White => (i32::MIN, None, 1, vec![]),
             PieceColor::Black => (i32::MAX, None, 1, vec![]),
@@ -127,6 +175,8 @@ pub fn minmax(
 
     let mut early_stop = false;
 
+    let mut flag = Flag::EXACT;
+
     for m in moves {
 
         let (score, _, nodes, pv) = minmax(
@@ -140,7 +190,8 @@ pub fn minmax(
             stop_calculation,
             time_per_move,
             move_timer,
-            positions_reached.clone(),
+            positions_reached,
+            transposition_table,
             None,
             false,
             m.capture
@@ -168,6 +219,10 @@ pub fn minmax(
 
         if beta <= alpha || stop_calculation.load(Ordering::Relaxed) || ((depth > 4 || top) && (time_per_move != 0 && move_timer.elapsed().as_millis() > time_per_move))
         {
+            flag = match turn {
+                PieceColor::White => Flag::BETA,
+                PieceColor::Black => Flag::ALPHA,
+            };
             break;
             early_stop = true;
         }
@@ -194,7 +249,22 @@ pub fn minmax(
             pv_str//Board::move_to_lan(&best_move)
         );
     }
-   
+
+    transposition_table.insert(board.zobrist_hash, Entry{
+        zobrist_hash: board.zobrist_hash,
+        depth: depth,
+        flag: flag,
+        eval: best,
+        ancient: false,
+        move_info: best_move,
+    });
+
+    if init_pos_count == 0 {
+        positions_reached.remove(&board.zobrist_hash);
+    } else {
+        positions_reached.insert(board.zobrist_hash, init_pos_count);
+    }
+
     (best, Some(best_move), node_count, best_pv)
 }
 
